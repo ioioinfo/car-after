@@ -1,0 +1,2645 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1">
+<title>BYD售后服务</title>
+<script src="http://libs.baidu.com/jquery/2.0.3/jquery.min.js" type="text/javascript"></script>
+<script src="js/lodash.min.js" type="text/javascript"></script>
+<script src="css/reset.css" type="text/css"></script>
+<script>
+$(function() {
+	var show = $(".show");
+	var con = $(".content");
+	var search = $(".search");
+	var go = $(".goin");
+	var customers = $(".customers");
+	var content2 = $(".content2");
+	var back = $(".back");
+	var cursor = $(".cursor");
+	var add_purch = $(".add_purch");
+	var purchase = $(".purchase");
+	var vihe_customer = $("#vihe_customer");
+	var vehicle_customer = $(".vehicle_customer")
+	var none_search = $(".none_search");
+	var none_search2 = $(".none_search2");
+	var results = $(".results");
+	var button2 = $(".button2");
+	var button3 = $(".button3");
+	var jixiaos = {{jixiaos|safe}};
+	var today_infos = {{rows|safe}};
+	var feedbacks = {{feedbacks|safe}};
+	var vehicles = {{vehicles|safe}};
+	var purchases = {{purchases|safe}};
+	var vehicle_total_infos;
+	var search_result;
+	var page_status = 1;
+	var content3 = $(".content3");
+	var content4 = $(".content4");
+	window.search_status = {
+		"time" :0,
+		"running" :false
+	};
+	//维修委托单
+	var repair_paper = function(){
+		var t = _.template($("#repair_paper_infos").html());
+		$("#repair_paper").html(t);
+	};
+	repair_paper();
+	$(".repair_cancel").click(function(){
+		content3.addClass("hide");
+		$(".borderline").removeClass("bord");
+	});
+	//新增维修项目
+	$(".repair_add").click(function(){
+		$(".borderline").removeClass("bord");
+		content3.addClass("hide");
+		content4.removeClass("hide");
+	});
+	var repair_baoyang = function(){
+		var t = _.template($("#baoyang_items_infos").html());
+		$("#baoyang_items").html(t);
+	}
+	repair_baoyang();
+	//点击维修
+	$("#repair").click(function(){
+		$(this).addClass("on");
+		$("#baoyang").removeClass("on");
+		$(".baoyang_item").removeClass("on");
+		$("#baoyang_items").addClass("hide");
+		$("#repair_items").removeClass("hide");
+	});
+	//点击保养
+	$("#baoyang").click(function(){
+		$(this).addClass("on");
+		$("#repair").removeClass("on");
+		$("#baoyang_items").removeClass("hide");
+		$("#repair_items").addClass("hide");
+		$(".repairs_item").removeClass("on");
+	});
+	$(".baoyang_item").click(function(){
+		if ($(this).attr("class") != "baoyang_item") {
+			$(this).removeClass("on");
+			return;
+		}
+		$(this).addClass("on");
+	});
+	$(".repairs_item").click(function(){
+		if ($(this).attr("class") != "repairs_item") {
+			$(this).removeClass("on");
+			return;
+		}
+		$(this).addClass("on");
+	});
+	//点击维修项目高亮
+	$(".borderline").click(function(){
+		$(".borderline").removeClass("bord");
+		$(this).addClass("bord");
+	});
+	$(".baoyang_cancel").click(function(){
+		content3.removeClass("hide");
+		content4.addClass("hide");
+	});
+	//页面状态
+	var change_page = function(status){
+		//首页
+		if (status == 1) {
+			show.addClass("on");
+			add_purch.removeClass("on");
+			add_purch.css("cursor","not-allowed");
+			$(".cursor").removeClass("bord");
+			con.removeClass("hide");
+			content2.addClass("hide");
+			results.addClass("hide");
+			page_status = 1;
+		}else if (status == 2) { //查询页面
+			show.removeClass("on");
+			add_purch.removeClass("on");
+			add_purch.css("cursor","not-allowed");
+			$(".cursor").removeClass("bord");
+			results.removeClass("hide");
+			content2.addClass("hide");
+			con.addClass("hide");
+			page_status = 2;
+		}else if (status ==3) { //客户信息页面
+			show.removeClass("on");
+			add_purch.removeClass("on");
+			add_purch.css("cursor","pointer");
+			$(".cursor").removeClass("bord");
+			content2.removeClass("hide");
+			results.addClass("hide");
+			con.addClass("hide");
+			page_status = 3;
+		}
+	};
+	//查询会员卡号
+	var check_member_info = function () {
+		var num = $("#huiyuan_number").val();
+		$.get("/check_member", {"num":num}, function(data,status){
+			if (data.member_info.length == 1) {
+				var member_info = data.member_info[0];
+				$("#vip_name").attr("value",member_info.client_name);
+				$("#vip_type").attr("value",member_info.huiyuankafenlei_name);
+				$("#vip_mobile").attr("value",member_info.mobile);
+				$("#vip_ruhui_date").attr("value",member_info.ruhui_date);
+				$("#vip_plate_numbers").attr("value",member_info.chepaihao);
+				$("#vip_shenfenzhenghaoma").attr("value",member_info.shenfenzhenghaoma);
+				$("#vip_ka_bianhao").attr("value",member_info.ka_bianhao);
+				$("#vip_zhuzhanghu_yue").attr("value",member_info.zhuzhanghu_yue);
+
+			}else {
+
+			}
+		});
+	};
+	// 刷新今天搜索面板
+	var refresh_today_search = function() {
+		var t = _.template($("#today_search_infos").html());
+		$("#search_today").html(t({today_infos:today_infos}));
+		$(".cursor").click(function(){
+			$(".cursor").removeClass("bord");
+			var client_id = $(this).data("id");
+			$(this).addClass("bord");
+			click_serarch_result(client_id);
+		});
+	};
+	refresh_today_search();
+	//首页绩效
+	var jixiao_list = function(){
+		var company_kpi = {"amount": 0,"customer_cnt": 0, "project_cnt": 0};
+		var user_kpi = {"amount": 0,"customer_cnt": 0, "project_cnt": 0};
+		if (jixiaos.company_kpi) {
+			company_kpi = jixiaos.company_kpi;
+		}
+		if (jixiaos.user_kpi) {
+			user_kpi = jixiaos.user_kpi;
+		}
+		var t = _.template($("#jixiao_infos").html());
+		$("#jixiao").html(t({company_kpi:company_kpi,user_kpi:user_kpi}));
+	}
+	jixiao_list();
+	//首页客户回访信息
+	var customers_feedback = function(){
+		var t = _.template($("#customers_feedback_infos").html());
+		$("#customers_feedback").html(t({feedbacks:feedbacks}));
+	};
+	customers_feedback();
+	//首页滞留车辆信息
+	var stay_vehicles = function(){
+		var t = _.template($("#stay_vehicles_infos").html());
+		$("#stay_vehicles").html(t({vehicles:vehicles}));
+	};
+	stay_vehicles();
+	//首页未采购信息
+	var unpurchase_infos = function(){
+		var t = _.template($("#purchase_infos").html());
+		$("#purchase_list").html(t({purchases:purchases}));
+	};
+	unpurchase_infos();
+	//手机修改
+	var click_phone_update = function(){
+		$("#phone_number").removeAttr("readOnly");
+		$("#phone_number").css("background-color","#dedede");
+	};
+	var click_phone_save = function(){
+		$("#phone_number").attr("readOnly","true");
+		$("#phone_number").css("background-color","white");
+	};
+	button3.click(function(){
+		purchase.addClass("hide");
+		$("#peijian_id").val("");
+		$("#peijian_name").val("");
+		$("#peijian_num").val("");
+		$("#peijian_date").val("");
+		$("#pur_remark").val("");
+	});
+	button2.click(function(){
+		vehicle_customer.addClass("hide");
+		$("#vehic_plate_number").val("");
+		$("#vehic_brand").val("");
+		$("#vehic_type").val("");
+		$("#vehic_pailiang_type").val("");
+		$("#vehic_color").val("");
+		$("#vehic_vin").val("");
+		$("#vehic_engine").val("");
+		$("#vehic_buy_date").val("");
+		$("#vehic_certi_date").val("");
+		$("#vehic_check_date").val("");
+
+		$("#custo_id").val("");
+		$("#custo_code").val("");
+		$("#custo_name").val("");
+		$("#custo_sex").val("");
+		$("#custo_phone").val("");
+		$("#custo_identi").val("");
+		$("#custo_birth").val("");
+		$("#custo_mobie").val("");
+		$("#custo_adress").val("");
+		$("#email").val("");
+	});
+	vihe_customer.click(function(){
+		vehicle_customer.removeClass("hide");
+	});
+	//获取所有车辆信息
+	var get_vehicle_info = function(){
+		$.get("/vehicle_info",function(data,status){
+			vehicle_total_infos = data.vehicle_infos;
+			//设置车品牌
+			_.forEach(vehicle_total_infos, function(vehicle_total_info) {
+				$('#vehic_brand').append($("<option></option>").attr("value",vehicle_total_info.name).text(vehicle_total_info.name));
+
+			});
+		});
+	};
+	get_vehicle_info();
+	//车辆车型select框变动
+	$("#vehic_brand").change(function(){
+		$('#vehic_type').html("<option></option>");
+		var name = $("#vehic_brand").val();
+		_.forEach(vehicle_total_infos, function(vehicle_total_info) {
+			if (vehicle_total_info.name == name) {
+				_.forEach(vehicle_total_info.types, function(type) {
+					$('#vehic_type').append($("<option></option>").attr("value",type.name).text(type.name));
+				});
+			}
+		});
+	});
+	//车辆颜色select变动
+	$("#vehic_brand").change(function(){
+		$('#vehic_color').html("<option></option>");
+		var name = $("#vehic_brand").val();
+		_.forEach(vehicle_total_infos, function(vehicle_total_info) {
+			if (vehicle_total_info.name == name) {
+				_.forEach(vehicle_total_info.colors, function(color) {
+					$('#vehic_color').append($("<option></option>").attr("value",color.name).text(color.name));
+				});
+			}
+		});
+	});
+	//创建采购单按钮
+	add_purch.click(function(){
+		if ($("#client_id").val()) {
+			purchase.removeClass("hide");
+			var pr = $(this).parentsUntil(".fixed");
+			pr.children(".child").removeClass("on");
+			$(this).addClass("on");
+			$("#pur_client_name").attr("value",search_result.row.name);
+			$("#pur_phone_number").attr("value",search_result.row.mobile);
+			$("#pur_plate_numbers").attr("value",search_result.row.plate_numbers);
+			$("#pur_type").attr("value",search_result.row.car_type);
+		}
+	});
+	//回到首页
+	show.click(function(){
+		change_page(1);
+		$("#client_id").removeAttr("value");
+	});
+	//键盘按下搜索
+	$("#txt").keypress(function(e){
+		var key = e.which; //e.which是按键的值
+		if (key == 13) {
+			search_go();
+		}
+	});
+	//配件code输入回车查询，信息显示
+	$("#peijian_id").change(function(){
+		var code = $("#peijian_id").val();
+		if (code) {
+			alert("123");
+			search_peijian(code);
+		}
+	});
+	var search_peijian = function(code){
+		var car_type = encodeURI(search_result.row.car_type);
+		$.post("/search_peijian",{code:code,car_type:car_type},function(data,status){
+			if (data.success) {
+				alert("success!");
+			}
+		});
+	};
+	//搜索多个结果
+	var click_serarch_result = function(client_id){
+		begin_query();
+		show.removeClass("on");
+		if (search_result && page_status == 3) {
+			if (client_id == search_result.row.id ) {
+				end_query();
+				return;
+			}
+		}
+		$.get("/customer_info",{client_id:client_id},function(data,status){
+			change_page(3);
+			end_query();
+
+			var t = _.template($("#customer_info").html());
+			var vip = {};
+			if(data.vips[0]){
+				vip = data.vips[0];
+			}
+			search_result = {row:data.rows[0],vip:vip,repairs:data.repair_orders,purchase_infos:data.purchase_infos};
+			$("#customer").html(t(search_result));
+
+			add_today_info(data.today_info);
+			$('html, body').scrollTop(0);
+			$("#phone_update").click(function(){
+				click_phone_update();
+			});
+			$("#phone_save").click(function(){
+				click_phone_save();
+				var client_id = search_result.row.id;
+				var phone_number = $("#phone_number").val();
+				if (phone_number ==  search_result.row.mobile) {
+					return;
+				}
+				$.post("/save_phone_number",{"client_id":client_id,"phone_number":phone_number},function(data,status){
+					if (!data.success) {
+						alert(data.message);
+						return;
+					}
+				});
+			});
+			$(".create").click(
+				 function () {
+					 $(".content3").removeClass("hide");
+					 $("#repair_client_name").attr("value",search_result.row.name);
+					 $("#repair_phone_number").attr("value",search_result.row.mobile);
+				 }
+			);
+			$("#check_member").click(function(){
+				check_member_info();
+			});
+			$("#huiyuan_number").keypress(function(e){
+				var key = e.which; //e.which是按键的值
+				if (key == 13) {
+					check_member_info();
+				}
+			});
+		});
+	};
+	go.click(function(){
+		results.addClass("hide");
+		search_go();
+	});
+
+	//今天查询添加
+	var add_today_info = function(today_info){
+		var exists = false;
+		for (var i = 0; i < today_infos.length; i++) {
+			if (today_infos[i].client_id == today_info.client_id) {
+				exists = true;
+				break;
+			}
+		}
+
+		if (!exists) {
+			today_infos.unshift(today_info);
+			refresh_today_search();
+		}
+		$('.cursor[data-id='+today_info.client_id+']').addClass("bord");
+	};
+
+	//搜索执行
+	var search_go = function(){
+		var info = encodeURI($("#txt").val());
+		none_search.addClass("hide");
+		none_search2.addClass("hide");
+		if (info) {
+			begin_query();
+			$.get("/search_info",{info:info},function(data,status){
+				end_query();
+				if(data.success)
+				{
+					var num = data.num;
+					if(num == 0){
+						//没有数据时候提醒
+						none_search.fadeIn("fast");
+						setTimeout("no_data()",10000);
+					}else if (num == 1) {
+						//大量数据的时候提醒
+						none_search2.fadeIn("fast");
+						setTimeout("large_data()",3000);
+					}
+					else if (num == 2) {
+						//查询出1条数据，直接显示客户信息
+						$("#txt").attr("value","");
+						content2.removeClass("hide");
+						con.addClass("hide");
+						var vip = {};
+						if(data.vips.length > 0){
+							vip = data.vips[0];
+						}
+						if (search_result) {
+							$('.cursor[data-id='+search_result.row.id+']').removeClass("bord");
+						}
+						add_purch.removeClass("hide");
+						var t = _.template($("#customer_info").html());
+						search_result = {row:data.rows[0],vip:vip,repairs:data.repair_orders,purchase_infos:data.purchase_infos};
+						$("#customer").html(t(search_result));
+						add_purch.css("cursor","pointer");
+						add_today_info(data.today_info);
+						//查询会员信息
+						$("#check_member").click(function(){
+							check_member_info();
+						});
+
+						//维修委托单创建
+						$(".create").click(
+							 function () {
+								 $(".content3").removeClass("hide");
+							 }
+						);
+					}
+					else if (num == 3) {
+						//查询出多条记录，到一个数据列表
+						change_page(2);
+
+						$("#txt").attr("value","");
+
+						var tt = _.template($("#customers_lists_infos").html());
+						$("#results_title_infos").html(tt({rows: data.rows}));
+						$("#results_title_infos .number").hover(
+							function () {
+								$(this).addClass("curr");
+							},
+							function () {
+								$(this).removeClass("curr");
+							}
+						);
+
+						$("#results_title_infos .number").click(function(){
+							var client_id = $(this).data("id");
+							add_purch.removeClass("hide");
+							click_serarch_result(client_id);
+						});
+
+					}
+				}else {
+					alert(data.message);
+				}
+			 });
+		}
+	};
+	//创建客户采购单
+	var create_purchase = $(".pur_save.two");
+	create_purchase.click(function(){
+		var peijian_id = $("#peijian_id").val();
+		var peijian_name = $("#peijian_name").val();
+		var peijian_num = $("#peijian_num").val();
+		var peijian_date = $("#peijian_date").val();
+		var pur_remark = $("#pur_remark").val();
+		var client_id = search_result.row.id;
+		$.post("/create_purchase_info", {"search_result":search_result, "peijian_id":peijian_id, "peijian_name":peijian_name,
+		"peijian_date":peijian_date, "pur_remark":pur_remark,"peijian_num":peijian_num, "client_id":client_id}, function(data,status){
+			if (!data.success) {
+				alert(data.message);
+				return;
+			}
+			purchase.addClass("hide");
+			$("#peijian_id").val("");
+			$("#peijian_name").val("");
+			$("#peijian_num").val("");
+			$("#peijian_date").val("");
+			$("#pur_remark").val("");
+
+		});
+
+	});
+	//创建客户档案 信息验证
+	var pur_save = $(".pur_save.one");
+	pur_save.click(function(){
+		var vehic_plate_number = $("#vehic_plate_number").val();
+		var vehic_brand = $("#vehic_brand").val();
+		if (vehic_brand == "") {
+			alert("检查车品牌"+vehic_brand);
+			return false;
+		}
+		var vehic_type = $("#vehic_type").val();
+		if (vehic_type == "") {
+			alert("检查车类型");
+			return false;
+		}
+		var vehic_pailiang_type = $("#vehic_pailiang_type").val();
+		if (vehic_pailiang_type == "") {
+			alert("检查车排量");
+			return false;
+		}
+		var vehic_color = $("#vehic_color").val();
+		if (vehic_color == "") {
+			alert("检查车颜色");
+			return false;
+		}
+		var vehic_vin = $("#vehic_vin").val();
+		if (vehic_vin == "") {
+			alert("检查车VIN");
+			return false;
+		}
+		var vehic_engine = $("#vehic_engine").val();
+		var vehic_buy_date = $("#vehic_buy_date").val();
+		var vehic_certi_date = $("#vehic_certi_date").val();
+		var vehic_check_date = $("#vehic_check_date").val();
+
+		var custo_id = $("#custo_id").val();
+		var custo_code = $("#custo_code").val();
+		var custo_name = $("#custo_name").val();
+		if (custo_name == "") {
+			alert("检查姓名");
+			return false;
+		}
+		var custo_sex = $("#custo_sex").val();
+		if (custo_sex == "") {
+			alert("检查性别");
+			return false;
+		}
+		var custo_phone = $("#custo_phone").val();
+		if (custo_phone == "") {
+			alert("检查手机");
+			return false;
+		}
+		var custo_identi = $("#custo_identi").val();
+		var custo_birth = $("#custo_birth").val();
+		var custo_mobie = $("#custo_mobie").val();
+		var custo_adress = $("#custo_adress").val();
+		var custo_email = $("#custo_email").val();
+		pur_save.attr("value","创建中");
+		pur_save.attr("disabled", true);
+		$.post("/create_customer_info",{vehic_plate_number:vehic_plate_number, vehic_brand:vehic_brand, vehic_type:vehic_type,
+			vehic_pailiang_type:vehic_pailiang_type, vehic_color:vehic_color, vehic_vin:vehic_vin, vehic_engine:vehic_engine,
+			vehic_buy_date:vehic_buy_date, vehic_certi_date:vehic_certi_date, vehic_check_date:vehic_check_date,
+			custo_id:custo_id, custo_code:custo_code, custo_name:custo_name, custo_sex:custo_sex, custo_phone:custo_phone,
+			custo_identi:custo_identi, custo_birth:custo_birth, custo_mobie:custo_mobie, custo_adress, custo_email:custo_email},
+			function(data,status){
+				if (!data.success) {
+					alert(data.message);
+					pur_save.removeAttr("disabled");
+					pur_save.attr("value","保存");
+					return;
+				}
+				vehicle_customer.addClass("hide");
+				click_serarch_result(data.client_id);
+				pur_save.removeAttr("disabled");
+				pur_save.attr("value","保存");
+				$("#vehic_plate_number").val("");
+				$("#vehic_brand").val("");
+				$("#vehic_type").val("");
+				$("#vehic_pailiang_type").val("");
+				$("#vehic_color").val("");
+				$("#vehic_vin").val("");
+				$("#vehic_engine").val("");
+				$("#vehic_buy_date").val("");
+				$("#vehic_certi_date").val("");
+				$("#vehic_check_date").val("");
+
+				$("#custo_id").val("");
+				$("#custo_code").val("");
+				$("#custo_name").val("");
+				$("#custo_sex").val("");
+				$("#custo_phone").val("");
+				$("#custo_identi").val("");
+				$("#custo_birth").val("");
+				$("#custo_mobie").val("");
+				$("#custo_adress").val("");
+				$("#email").val("");
+			});
+		});
+	//首页点击客户姓名直接跳转客户信息页面
+	$(".lianjie").click(function(){
+		var client_id = $(this).data("id");
+		click_serarch_result(client_id);
+	});
+});
+
+function no_data(){
+	var none_search = $(".none_search");
+	none_search.fadeOut(2000);
+};
+function large_data(){
+	var none_search2 = $(".none_search2");
+	none_search2.fadeOut(2000);
+};
+function begin_query(){
+	var d = new Date();
+	var t = d.getTime();
+	search_status.time = t;
+	search_status.running = true;
+
+	$('.xian').addClass("fullwidth");
+	$('.xian').removeClass('fullwidth').delay(10).queue(function(next){
+		$(this).addClass('fullwidth');
+		next();
+	});
+};
+function stop_query(){
+	$('.xian').removeClass('fullwidth');
+};
+function end_query(){
+	var d = new Date();
+	var t = d.getTime();
+	if (t - search_status.time < 2000) {
+		setTimeout("stop_query()",2000 - (t - search_status.time));
+	}
+	else {
+		stop_query();
+	}
+};
+</script>
+<style type="text/css">
+	body{
+	margin:0;
+	padding:0;
+	}
+	div, a{
+	-webkit-tap-highlight-color:rgba(255,0,0,0);
+	}
+	body, div, h1, h2, h3, h4, h5, h6, p{
+	padding:0;
+	margin:0;
+	}
+	body{
+	background-image:url();
+	background-color:#fff;
+	background-size:100%;
+	background-repeat:no-repeat;
+	}
+	a{
+	color:inherit;
+	text-decoration:none;
+	}
+	ul, li{
+	list-style:none;
+	margin:0;
+	padding:0;
+	}
+	html {
+    -webkit-text-size-adjust: none; /* Prevent font scaling in landscape */
+	}
+	html, body, * {
+		font-family: "Microsoft YaHei" ! important;
+		color: #666;
+	}
+	body {
+		background-color: #f4f4f4;
+	}
+	div{
+		/*border: 1px solid #999;*/
+	}
+	.outside{
+		width: 100%;
+		min-width: 1100px;
+		margin: 60px auto 0;
+		/*background: #fff;*/
+		/*background-size: cover;
+		overflow: hidden;
+		background-position: center center;
+		background-image: url(images/white.png);*/
+	}
+	.content{
+		width: 800px;
+		margin: auto;
+		margin-top: 15px;
+	}
+	.section{
+		width: 100%;
+		border: 1px solid #e5e5e5;
+		float: left;
+		background-color: #fff;
+	}
+	.section .title{
+		text-align:center;
+		border-bottom: 1px solid #f0f0f0;
+		padding:8px;
+		font-size: 18px;
+	}
+	.margin-bottom10{
+		margin-bottom: 10px;
+	}
+	.section .item{
+		float:left;
+		width:47.99%;
+		margin-left: 1%;
+		text-align:center;
+		font-size: 14px;
+		margin-top: 15px;
+	}
+	.section .menu{
+		/*margin: 2px;*/
+
+	}
+	.menu .list{
+		width: 49%;
+		text-align:center;
+		margin-left: 0.4%;
+		margin-top: 1px;
+		float: left;
+	}
+	.menu .list2{
+		width: 49%;
+		text-align:center;
+		margin-right: 0.4%;
+		margin-top: 1px;
+		float: right;
+	}
+	.menu .list .item{
+		width: 48.5%;
+		text-align:center;
+		height: 16px;
+		margin: 0.9% 0.5%;
+		float: left;
+		font-size: 14px;
+		margin-top: 15px;
+
+	}
+	.menu .list2 .item{
+		width: 48.5%;
+		text-align:center;
+		height: 16px;
+		margin: 0.9% 0.5%;
+		float: left;
+		font-size: 16px;
+		margin-bottom: 15px;
+		margin-top: 15px;
+	}
+	.menu .item{
+		float: left;
+		text-align:center;
+		margin: 0.5%;
+		width: 24%;
+		height: 16px;
+		font-size: 14px;
+		margin-top: 15px;
+	}
+	.item3 .item2{
+		float: left;
+		margin: 1%;
+		width: 31%;
+		height: 16px;
+		font-size: 14px;
+		margin-top: 15px;
+	}
+	.item3 .item4{
+		float: left;
+		width: 98%;
+		margin: 0 7px 10px;
+	}
+	.item3 .item5{
+		float: left;
+		width: 98%;
+		margin: 5px 7px;
+	}
+	.menu .item3{
+		float: left;
+		width: 100%;
+		font-size: 14px;
+		/*min-height: 16px;
+		_height: 200px;*/
+		border-bottom: 1px solid #f0f0f0;
+
+	}
+	.item4{
+
+	}
+	.menu .item3:last-child{
+		border-bottom:none;
+	}
+	.menu .item:last-child{
+		margin-bottom: 15px;
+	}
+	#fixed{
+		/*top:50px;
+		right:10%;
+		position: fixed;*/
+		float: right;
+	}
+	.show{
+		top:5px;
+		height: 40px;
+		width: 40px;
+		background-position: 0 0;
+		background-image: url(images/icons.png);
+		background-size: auto 40px;
+		background-repeat:no-repeat;
+		position: absolute;
+		cursor: pointer;
+	}
+	.show.on{
+		background-position: -40px 0;
+	}
+	/*.back{
+		height: 40px;
+		width: 40px;
+		background-position: -320px 0;
+		background-image: url(images/icons.png);
+		background-size: auto 40px;
+		background-repeat:no-repeat;
+		position: absolute;
+		margin-top: 50px;
+		cursor: pointer;
+	}
+	.back.on{
+		background-position: -400px 0;
+	}*/
+	.add_purch{
+		top:5px;
+		height: 40px;
+		width: 40px;
+		background-position: -200px 0;
+		background-image: url(images/icons.png);
+		background-size: auto 40px;
+		background-repeat:no-repeat;
+		position: absolute;
+		margin-left: 50px;
+		cursor:  not-allowed;
+	}
+	.person{
+		top:10px;
+		height: 40px;
+		width: 120px;
+		line-height: 40px;
+		font-size: 12px;
+		position: absolute;
+		margin-left: 120px;
+		cursor: pointer;
+	}
+	/*.employee{
+		height: 40px;
+		width: 40px;
+		background-position: -560px 0;
+		background-image: url(images/icons.png);
+		background-size: auto 40px;
+		background-repeat:no-repeat;
+		position: absolute;
+		margin-top: 150px;
+		cursor:  pointer;
+	}
+	.employee.on{
+
+	}*/
+	.add_purch.on{
+		background-position: -280px 0;
+	}
+	.hide{
+		display: none;
+	}
+	.outside_search{
+		position: fixed;
+		top: 0;
+		width: 100%;
+		height:50px;
+		background: #fafafa;
+		line-height: 50px;
+		box-shadow: 0px 5px 8px #dedede;
+	}
+	.search{
+		width: 800px;
+		height:40px;
+		margin: 0 auto;
+	}
+	.input{
+		width: 60%;
+		margin: auto;
+		height: 20px;
+		line-height:16px;
+		margin-top: 25px;
+		margin-right: 0px;
+	}
+	.input{
+		width: 60%;
+		margin: auto;
+		height: 20px;
+		line-height:16px;
+		margin-top: 25px;
+		border: 1px solid #b6b6b6;
+		border-right-width: 0;
+	}
+	#txt{
+		width: 300px;
+		height: 16px;
+		line-height:16px;
+		font-size: 14px;
+		outline:none;
+		padding: 7px;
+		margin: 0;
+	}
+	#txt2{
+		width: 300px;
+		height: 16px;
+		line-height:16px;
+		font-size: 14px;
+		outline:none;
+		padding: 7px;
+		margin: 0;
+	}
+	.goin{
+		width: 74px;
+		height: 30px;
+		line-height:16px;
+		text-align:center;
+		background: #3C88FC;
+		color: white;
+		font-size: 14px;
+		cursor: pointer;
+		outline:none;
+		border-style:none;
+		margin-left: -6px;
+
+	   /*background: -webkit-linear-gradient(top, #3C88FC, #0000ff);   /*Safari5.1 Chrome 10+*/*/
+	}
+
+
+	.customers{
+		float: left;
+		width: 160px;
+		margin-left: 26px;
+		border: 1px solid #e5e5e5;
+		color: #333333;
+		background-color: #fff;
+		border-bottom: none;
+	}
+	@media screen and (min-width: 1440px) {
+		.customers{
+			margin-left: 100px;
+		}
+	}
+	@media screen and (min-width: 1280px) and (max-width: 1440px){
+		.customers{
+			margin-left: 50px;
+		}
+	}
+	@media screen and (max-width: 1280px) {
+		.customers{
+			margin-left: 26px;
+		}
+	}
+
+	.cursor_title{
+		text-align:center;
+		border-bottom: 1px solid #f0f0f0;
+		/*background-color: #dedede;*/
+		padding: 8px;
+		font-size: 18px;
+		/*font-weight: bold;*/
+	}
+	.cursor{
+		height: 39px;
+		border-bottom: 1px solid #f0f0f0;
+		cursor: pointer;
+	}
+	.cursor .item{
+		height: 16px;
+		font-size: 12px;
+		margin-left: 5px;
+		/*border:1px solid #F7F7F7;*/
+		/*background: #F7F7F7;*/
+	}
+	.cursor .item .name{
+		margin: 2px;
+		width: 65%;
+	}
+	.cursor .item .type{
+		margin: 1px;
+		text-align:center;
+		width: 30%;
+	}
+	.cursor .item .plate{
+		margin: 1px;
+		width: 60%;
+	}
+	.cursor .item .time{
+		margin: 1px;
+		margin-left: 5px;
+	}
+	.content2{
+		width: 800px;
+		margin: auto;
+		margin-top: 5px;
+	}
+	.content2 .section{
+		margin-left: 11px;
+		width: 257px;
+		height: 330px;
+		float: left;
+	}
+
+	.content2 .section .item{
+		margin: 1%;
+		height: 24px;
+		line-height: 24px;
+		width: 98%;
+		font-size: 12px;
+	}
+	.item span{
+		float: left;
+		margin-left: 1%;
+	}
+	.item input{
+		float: right;
+		margin-top: 2.2px;
+		height: 14px;
+		width: 158px;
+		margin-right: 5px;
+	}
+	.item .btn{
+		width: 28px;
+		font-size: 12px;
+		height: 18px;
+		float: left;
+		line-height:18px;
+		margin-top: 3px;
+		border: 1px solid #CECECE;
+		margin-left: 2px;
+		cursor: pointer;
+	}
+	.content2 .section_last{
+		width: 798px;
+		margin-top: 10px;
+		float: left;
+		border: 1px solid #e5e5e5;
+		background: #fff;
+	}
+	.content2 .section_last .title{
+		text-align:center;
+		/*font-weight:bold;*/
+		border-bottom: 1px solid #f0f0f0;
+		padding:8px;
+		/*background-color: #dedede;*/
+		font-size: 18px;
+	}
+	.content2 .section_last .item{
+		margin: 0.3%;
+		height: 24px;
+		line-height: 24px;
+		width: 32.4%;
+		float: left;
+		font-size: 12px;
+	}
+	.worn{
+		width:99%;
+		height:32px;
+		background: #F7F7F7;
+		margin: 5px;
+		line-height: 32px;
+		float: left;
+		font-size: 12px;
+	}
+
+	.worn2{
+		width:99%;
+		margin: 5px;
+		line-height: 12px;
+		float: left;
+		font-size: 12px;
+	}
+	.worn span:last-child{
+		width: 678px;
+		color: #ff0000;
+		font-weight: 600;
+	}
+	.worn2 span:last-child{
+		margin-top: 0;
+	}
+	.worn2 input{
+		margin-left: 23px;
+		width: 678px;
+	}
+	.create{
+		height: 30px;
+		width: 30px;
+		background-position: -60px 0;
+		background-image: url(images/icons.png);
+		background-size: auto 30px;
+		background-repeat:no-repeat;
+		cursor: pointer;
+		float: right;
+		margin-top: -3px;
+	}
+	.customers .shut{
+		margin: 2%;
+		height: 10px;
+		line-height: 20px;
+	}
+ 	.highlight{
+		/*background:#FFFF88;*/
+		color: #ff3333;
+		font-weight:600;
+	}
+	.weui_mask {
+	    position: fixed;
+	    z-index: 1;
+	    width: 100%;
+	    height: 100%;
+	    top: 0;
+	    left: 0;
+	    background: rgba(0, 0, 0, 0.6);
+	}
+	.weui_dialog {
+	    position: fixed;
+	    z-index: 13;
+	    width: 896px;
+	    top: 50%;
+	    left: 53%;
+	    -webkit-transform: translate(-50%, -50%);
+	    transform: translate(-50%, -50%);
+	    background-color: #FAFAFC;
+	    border-radius: 3px;
+	    overflow: hidden;
+	}
+	.weui_dialog .item{
+		height: 520px;
+
+	}
+	.weui_dialog .item .head{
+		height: 22px;
+		width: 100%;
+		margin: 0;
+		line-height: 18px;
+		text-align:center;
+	}
+	.weui_dialog .item .head span{
+		padding: 15px;
+		background-color: #d9d9d9;
+		margin-left: 0;
+	}
+	.weui_dialog .item .main{
+		height: 200px;
+		margin: 1px;
+		border-bottom: 1px solid #DEDEDE;
+	}
+	.weui_dialog .item .main .left{
+		width: 48%;
+		height: 140px;
+		float: left;
+	}
+	.weui_dialog .item .main .right{
+		width: 48%;
+		margin-left: 2%;
+		height: 140px;
+		float: left;
+	}
+	.weui_dialog .item .repair{
+		height: 25px;
+		margin-top: 12px;
+	}
+	.main .line{
+		height: 24px;
+		width: 98%;
+		margin: 1%;
+	}
+	.main .line .font{
+		height: 20px;
+		margin:1px;
+		width: 48.5%;
+		float: left;
+	}
+	.main .line .hehind{
+		height: 20px;
+		margin:1px 1px 1px 2px;;
+		width: 48.5%;
+		float: left;
+	}
+	.main .line span{
+		height: 17px;
+		width:45%;
+		text-align:right;
+		font-size:12px;
+		line-height: 12px;
+		margin-top: 4px;
+	}
+	.main .line input{
+		height: 12px;
+		width: 45%;
+		font-size:12px;
+		line-height: 12px;
+		float: none;
+	}
+	.main .line .one{
+		height: 20px;
+		margin:1px;
+		width: 99%;
+		float: left;
+	}
+	.main .line .one span{
+		height: 17px;
+		width: 21.5%;
+		text-align:right;
+		font-size:12px;
+		line-height: 12px;
+		margin-top: 4px;
+	}
+	.main .line .one input{
+		height: 12px;
+		width: 72.4%;
+		font-size:12px;
+		line-height: 12px;
+		float: none;
+	}
+	.main .line2{
+		height: 42px;
+		width: 98%;
+		margin: 1%;
+	}
+	.main .line2 .two{
+		height: 40px;
+		margin:1px;
+		width: 99%;
+		float: left;
+	}
+	.main .line2 .two span{
+		height: 38px;
+		width: 21.5%;
+		text-align:right;
+		font-size:12px;
+		line-height: 12px;
+		margin-top: 4px;
+	}
+	.main .column{
+		width: 98%;
+		/*margin-left: 29px;*/
+		height: 40px;
+		float: left;
+	}
+	.columnlist{
+		height: 28px;
+		/*margin: 5.5px;*/
+		width: 32%;
+		float: left;
+	}
+	.columnlist span{
+		height: 12px;
+		margin: 7px 0;
+		margin-left: 47px;
+		/*width: 40%;*/
+		line-height: 12px;
+		font-size: 12px;
+	}
+	/*.columnlist input{
+		height: 12px;
+		line-height: 12px;
+		width: 30%;
+		float: none;
+		margin-top: 4px;
+	}*/
+	.columnlist2{
+		height: 28px;
+		margin: 5.5px;
+		width: 15%;
+		float: left;
+	}
+	.columnlist2 span{
+		height: 12px;
+		margin: 7px 0px;
+		margin-left: 10px;
+		width: 47%;
+		line-height: 12px;
+		font-size: 12px;
+	}
+	.columnlist2 input{
+		height: 14px;
+		line-height: 14px;
+		width: 25%;
+		float: none;
+		margin-top: 4px;
+	}
+	.sub_main{
+		height: 250px;
+	}
+	.sub_main .part{
+		height: 26px;;
+		margin-top: 2px;
+		margin-left: 40px;
+	}
+	.sub_main .part_last{
+		height: 190px;;
+		width: 100%;
+		margin-top: 6px;
+	}
+	.sub_main .part .module{
+		width: 10%;
+		height: 20px;
+		margin: 2px 2px 0 2px;
+		line-height:20px;
+		font-size: 12px;
+		margin-left: 2px;
+		text-align:center;
+	}
+	.sub_main .part .module_list{
+		width: 6%;
+		height: 20px;
+		margin: 5px 2px 0 2px;
+		line-height:20px;
+		font-size: 12px;
+		margin-left: 2px;
+		float: left;
+	}
+	.sub_main .part .module_list2{
+		width: 6%;
+		height: 20px;
+		margin: 4px 2px 0 2px;
+		line-height:20px;
+		font-size: 12px;
+		margin-left: 2px;
+		float: left;
+		text-align:center;
+	}
+	.sub_main .part .module_list3{
+		width: 12%;
+		height: 20px;
+		margin: 4px 2px 0 2px;
+		line-height:20px;
+		font-size: 12px;
+		margin-left: 2px;
+		float: left;
+	}
+	.sub_main .part .module_list img{
+		width: 27%;
+		height: 14px;
+		margin: 2px 0;
+		border: 1px solid #CECECE;
+		margin-left: 9%;
+	}
+	.sub_main .part .module_list span{
+		width: 50%;
+		height: 14px;
+		line-height:14px;
+		font-size: 12px;
+		margin: 2px 2px 2px 0;
+		float: right;
+	}
+	.part .split{
+		float: left;
+		width: 1%;
+		height: 12px;
+		line-height: 12px;
+		margin: 7px 0;
+		border:none;
+
+	}
+	.part select{
+		float: left;
+		width: 18%;
+		margin: 5px 0;
+	}
+	.part_last table{
+		border: 1px solid #CECECE;
+		height:100px;
+		width: 100%;
+		/*margin: 2px;*/
+	}
+	.td1{
+		height: 10px;
+	}
+	.weui_dialog2 {
+		position: fixed;
+		z-index: 13;
+		width: 650px;
+		top: 50%;
+		left: 50%;
+		-webkit-transform: translate(-50%, -50%);
+		transform: translate(-50%, -50%);
+		background-color: #FAFAFC;
+		border-radius: 3px;
+		overflow: hidden;
+	}
+	.weui_dialog3 {
+		position: fixed;
+		z-index: 13;
+		width: 650px;
+		top: 50%;
+		left: 50%;
+		-webkit-transform: translate(-50%, -50%);
+		transform: translate(-50%, -50%);
+		background-color: #FAFAFC;
+		border-radius: 3px;
+		overflow: hidden;
+	}
+	.pur_item{
+		height: 288px;
+	}
+	.new{
+		background-position: -390px 0;
+		background-image: url(images/icons.png);
+		background-size: auto 30px;
+		background-repeat:no-repeat;
+		cursor: pointer;
+		display:inline-block;
+		height:30px;
+		width:30px;
+		vertical-align:middle;
+	}
+	.none{
+		font-size: 16px;
+		color:#ff0000;
+		line-height: 105px;
+	}
+	.vehicle_customer_item{
+		height: 400px;
+		background: #F7F7F7;
+	}
+	.vehicle_customer_item .section{
+		width: 315px;
+		height: 350px;
+		float: left;
+		border:none;
+		margin-bottom: -5px;
+	}
+	.vehicle_customer_item .section .item{
+		margin: 1.5%;
+		height: 24px;
+		line-height: 24px;
+		width: 98%;
+		font-size: 14px;
+	}
+	.vehicle_customer_item .section .item:first-child{
+		margin-top: 8px;
+	}
+	.vehicle_customer_item .section .item span{
+		float: left;
+		margin-left: 6%;
+	}
+	.vehicle_customer_item .section .item select{
+		width: 163px;
+		outline: none;
+		float: right;
+		margin-right: 5%;
+	}
+	.results{
+		width: 800px;
+		height: 600px;
+		margin: auto;
+		margin-top: 20px;
+		color:#333333;
+		border-color: #666666;
+		border-collapse: collapse;
+		padding-top: 40px;
+	}
+
+
+	.results_text{
+		height: 60px;
+		line-height: 48px;
+		font-size: 24px;
+		text-align:center;
+		/*border-bottom: 1px solid #999;*/
+	}
+
+	table.gridtable {
+		font-family: verdana,arial,sans-serif;
+		font-size:11px;
+		color:#333333;
+		border-width: 1px;
+		border-color: #666;
+		border-collapse: collapse;
+		width: 100%;
+	}
+	table.gridtable th {
+		border-width: 1px;
+		padding: 8px;
+		border-style: solid;
+		border-color: #666666;
+		background-color: #dedede;
+		font-size: 18px;
+	}
+	table.gridtable td {
+		border-width: 1px;
+		padding: 8px;
+		border-style: solid;
+		border-color: #666666;
+		background: #F7F7F7;
+		font-size: 14px;
+	}
+	table.gridtable2 {
+		font-family: verdana,arial,sans-serif;
+		font-size:11px;
+		color:#333333;
+		border-width: 1px;
+		border-color: #d9d9d9;
+		border-collapse: collapse;
+		width: 100%;
+	}
+	table.gridtable2 th {
+		border-width: 1px;
+		padding: 8px;
+		border-style: solid;
+		border-color: #dedede;
+		font-size: 18px;
+	}
+	table.gridtable2 td {
+		border-width: 1px;
+		border-style: solid;
+		border-color: #dedede;
+		font-size: 12px;
+		line-height: 12px;
+		height: 20px;
+	}
+	.line_last{
+		border-bottom:1px solid #f0f0f0;
+		width:100%;
+	}
+	.line_last:last-child{
+		border: none;
+
+	}
+	select{
+		cursor: pointer;
+		border-radius: .25em;
+	}
+	/*purchase*/
+	.pur_item_title{
+		width:100%;
+		padding:15px;
+		text-align: center;
+		border-bottom:1px solid #f0f0f0;
+		background-color: #dedede;
+		/*font-weight: bold;*/
+	}
+
+	.pur_item .section{
+		border: none;
+		margin: 0;
+	}
+	.pur_item .section input{
+		margin-right: 5%;
+	}
+	.curr{
+		color: #ff8888;
+	}
+	.bord{
+		background-color: #3C88FC;
+	}
+	.bord .item span{
+		color:white;
+	}
+	#none_repair_data{
+		text-align: center;
+		font-size: 18px;
+		padding: 8px;
+	}
+	.pur_save {
+		width: 70px;
+		height: 25px;
+		border: none;
+		background: #056daa;
+		color: #ffffff;
+		-moz-border-radius: 5px;
+		-webkit-border-radius: 5px;
+		border-radius: 5px;
+		margin-right: 13px;
+	}
+	.button3, .button2 {
+		width: 70px;
+		height: 25px;
+		border: none;
+		background: #7c7777;
+		color: #ffffff;
+		-moz-border-radius: 5px;
+		-webkit-border-radius: 5px;
+		border-radius: 5px;
+	}
+	.hover{
+		background-color: #ff8888;
+	}
+	#phone_number{
+		width:91px;
+		margin-left:45px;
+		float:left;
+		margin-right:2px;
+		border-style: ridge;
+		border-color: #dedede;
+		outline: none;
+	}
+	#huiyuan_number{
+		width:124px;
+		margin-left:21px;
+		float:left;
+		margin-right:2px;
+		background-color: #dedede;
+		border-style: ridge;
+		border-color: #dedede;
+		outline: none;
+	}
+	.vehicle_customer_item .title{
+		width:100%;
+		padding:15px;
+		/*font-weight:bold;*/
+		text-align:center;
+		background-color: #dedede;
+		border-bottom: 1px solid #CECECE;
+	}
+	.cursor_none{
+		text-align:center;
+		line-height:39px;
+		height: 39px;
+		border-bottom: 1px solid #CECECE;
+	}
+	.toolong{
+		overflow:hidden;
+		text-overflow:ellipsis;
+		white-space:nowrap;
+	}
+	.vehicle_customer_item .section input{
+		margin-right: 5%;
+	}
+	.word{
+		margin-left: 15px;
+	}
+	.menu .item_client{
+		float: left;
+		text-align:center;
+		height: 16px;
+		font-size: 14px;
+		margin-top: 15px;
+		width: 140px;
+	}
+	.menu .item_peijian{
+		float: left;
+		text-align:center;
+		height: 16px;
+		font-size: 14px;
+		margin-top: 15px;
+		width:330px;
+	}
+	.menu .item_beizhu{
+		float: left;
+		text-align:left;
+		height: 16px;
+		font-size: 14px;
+		margin-top: 15px;
+		width:330px;
+	}
+	.menu .item_price{
+		float: left;
+		text-align:center;
+		height: 16px;
+		font-size: 14px;
+		margin-top: 15px;
+		width:140px;
+	}
+	.menu .item_price:last-child{
+		margin-bottom: 15px;
+	}
+	.menu .item_mobile{
+		float: left;
+		text-align:center;
+		height: 16px;
+		font-size: 14px;
+		margin-top: 15px;
+		width: 160px;
+	}
+	.menu .item_type{
+		float: left;
+		text-align:center;
+		height: 16px;
+		font-size: 14px;
+		margin-top: 15px;
+		width: 220px;
+	}
+	.menu .item_point{
+		float: left;
+		text-align:center;
+		height: 16px;
+		font-size: 14px;
+		margin-top: 15px;
+		width: 140px;
+	}
+	.menu .item_time{
+		float: left;
+		text-align:center;
+		height: 16px;
+		font-size: 14px;
+		margin-top: 15px;
+		width: 140px;
+	}
+	.menu .item_time:last-child{
+		margin-bottom: 15px;
+	}
+	#remark{
+		width: 98%;
+		margin-left: 3px;
+	}
+	/*#pur_remark{
+		width: 477px;
+		margin-right: 19px;
+	}*/
+	.lianjie{
+		color: #459ae9;
+		cursor: pointer;
+	}
+	.pur_list{
+		font-size: 12px;
+		margin: 8px;
+
+	}
+	.pur_infos{
+		border-bottom: 1px solid #f0f0f0;
+	}
+	.pur_infos:last-child{
+		border-bottom: none;
+	}
+	.p1{
+		width:800px;
+		margin:20px auto 5px;
+		height:32px;
+		font-size:12px;
+		line-height:12px;
+		color:#666;
+	}
+	.p2{
+		position: fixed;
+		top:5px;
+		right: 5%;
+		height:18px;
+		font-size:12px;
+		line-height:12px;
+		color:#666;
+	}
+	.span1{
+		width:33%;
+		display:inline-block;
+	}
+	.span2{
+		width:33%;
+		text-align:center;
+		display:inline-block;
+	}
+	.span3{
+		width:33%;
+		text-align:right;
+		display:inline-block;
+	}
+	.item.one{
+		text-align: left;
+		width: 32%;
+		margin-left:134px;
+
+	}
+	.p3{
+		width: 698px;
+		float: left;
+		margin-left: 24px;
+		line-height: 18px;
+	}
+	.p4{
+		float:left;
+		line-height:18px;
+	}
+	.none_data{
+		background: url(images/135_03.png);
+	    background-repeat: no-repeat;
+	    background-size: 300px 110px;
+	    font-size: 27px;
+	    height: 110px;
+	    width: 300px;
+	    margin: auto;
+	}
+	.logo{
+		background: url(images/logo.png);
+		float: left;
+		background-repeat:no-repeat;
+		width: 40px;
+		height: 40px;
+		background-size: 40px 40px;
+		margin-left: 27px;
+	}
+	.xian{
+		width: 100%;
+		top: 52px;
+		height: 3px;
+		position: fixed;
+		/*background-color: #000;*/
+	}
+	.fullwidth .expand{
+		width:100%;
+		height:2px;
+		margin:1px 0;
+		background:#3C88FC;
+		position:absolute;
+		box-shadow:0px 0px 10px 1px #f4f4f4;
+		-moz-animation:fullexpand 2s ease-out;
+		-webkit-animation:fullexpand 2s ease-out;
+	}
+	@-moz-keyframes fullexpand{
+		0%{width:0px;}
+		100%{ width:100%;}
+	}
+	@-webkit-keyframes fullexpand{
+		0%{width:0px;}
+		100%{ width:100%;}
+	}
+	.table_item{
+		border: 1px solid #d9d9d9;
+		height: 190px;
+		width: 99%;
+	    margin-left: 0.3%;
+	}
+	.item_num{
+		float: left;
+		height: 20px;
+		font-size: 12px;
+		width: 4%;
+		border-right:1px solid #d9d9d9;
+		line-height: 20px;
+		text-align: center;
+	}
+	.item_project{
+		float: left;
+		height: 20px;
+		font-size: 12px;
+		width: 35%;
+		border-right:1px solid #d9d9d9;
+		line-height: 20px;
+	}
+	.item_hour{
+		float: left;
+		height: 20px;
+		font-size: 12px;
+		width:14%;
+		border-right:1px solid #d9d9d9;
+		line-height: 20px;
+	}
+	.item_type{
+		float: left;
+		height: 20px;
+		font-size: 12px;
+		width:17%;
+		line-height: 20px;
+	}
+	.borderline{
+		border-top: 1px solid #d9d9d9;
+		height: 20px;
+	}
+	.borderline:last-child{
+		border-bottom: 1px solid #d9d9d9;
+		height: 20px;
+	}
+	.repair_add{
+		cursor: pointer;
+	}
+	.repair_item{
+		height:420px;
+	}
+	.repair_item .head{
+		height: 51px;
+		background: #Dedede;
+		width:100%;
+	}
+	.head .title{
+		padding:15px;
+		float:left;
+		width: 46%;
+		text-align: center;
+		cursor: pointer;
+		border-bottom: 1px solid #fff;
+	}
+	.head .title.on{
+		border-bottom: 1px solid #999;
+	}
+	.baoyang_item{
+		float:left;
+		width:182px;
+		margin:20px;
+		text-align:center;
+		cursor: pointer;
+		border: 1px solid #fff;
+	}
+	.repairs_item{
+		float:left;
+		width:192px;
+		margin:10px;
+		text-align:center;
+		cursor: pointer;
+		border: 1px solid #fff;
+	}
+	.repairs_item.on{
+		border:1px solid #ff0000;
+	}
+	.baoyang_item.on{
+		border:1px solid #ff0000;
+	}
+	.repair_item .main{
+		height: 340px;
+	}
+	.repair_item .foot{
+		height: 30px;
+	}
+	.baoyang_cancel{
+		float: right;
+		width: 158px;
+		margin-right: 5px;
+		height: 25px;
+	}
+	.baoyang_save{
+		float: right;
+		width: 158px;
+		margin-right: 5px;
+		height: 25px;
+	}
+</style>
+</head>
+<body>
+	<div class="outside_search">
+		<div class="logo"></div>
+		<div class="search">
+			<input class="input" id="txt" name="query" placeholder="请输入手机号/车牌号/车架号/姓名查询">
+			<input class="goin" value="搜索一下" readonly>
+			<div id="fixed">
+				<div class="show child on"></div>
+				<!-- <div class="back child" ></div> -->
+				<div class="add_purch child"></div>
+				<div class="person">欢迎，xxx，登出</div>
+				<div class="employee child hide"></div>
+				<div></div>
+			</div>
+			<div class="none_search none_data hide">
+				<span class="none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;未找到数据，请新增客户档案！</span>
+				<span id="vihe_customer" class="new"></span>
+			</div>
+			<div class="none_search2 none_data hide">
+				<div class="none" >&nbsp;&nbsp;&nbsp;搜索匹配数据过多，请多输入几位！</div>
+			</div>
+		</div>
+	</div>
+	<div class="xian">
+		<span class="expand"></span>
+	</div>
+	<div class="outside">
+		<div class="customers">
+			<div class="cursor_title">
+				今天查询
+			</div>
+			<div id="search_today">
+			</div>
+
+		</div>
+		<div class="content ">
+			<div class="section margin-bottom10">
+				<div class="title">
+					昨天绩效
+				</div>
+				<div class="body" id="jixiao">
+
+
+				</div>
+				<div style="clear:both;"></div>
+			</div>
+			<div class="section margin-bottom10">
+				<div class="title">
+					未完成采购申请单
+				</div>
+				<div class="menu" id="purchase_list">
+
+
+
+				</div>
+				<div style="clear:both;"></div>
+			</div>
+			<div class="section margin-bottom10">
+				<div class="title">
+					滞留车辆
+				</div>
+				<div class="menu" id="stay_vehicles">
+
+				</div>
+				<div style="clear:both;"></div>
+			</div>
+			<div class="section">
+				<div class="title">
+					维修回访
+				</div>
+				<div class="menu" id="customers_feedback">
+
+				</div>
+				<div style="clear:both;"></div>
+			</div>
+		</div>
+		<script id="jixiao_infos" type="text/template">
+			<div class="item one">维修项目总数量: <%- company_kpi.project_cnt %></div>
+			<div class="item one">我的维修数量: <%- user_kpi.project_cnt %></div>
+
+			<div class="item one">维修项目总金额: <%- company_kpi.amount %></div>
+			<div class="item one">我的维修金额:  <%- user_kpi.amount %></div>
+
+			<div class="item one" style="margin-bottom: 15px">接待顾客总数量: <%- company_kpi.customer_cnt %></div>
+			<div class="item one">我接待顾客数量: <%- user_kpi.customer_cnt %></div>
+		</script>
+		<script id="purchase_infos" type="text/template">
+			<% _.forEach(purchases, function(purchase) { %>
+				<div class="pur_infos">
+					<div class="pur_list"><% if (purchase.promise_date) { %><%- purchase.days %>天&nbsp;|&nbsp;<%- purchase.promise_date %>&nbsp;|&nbsp;<% } %><span class="lianjie" data-id="<%- purchase.client_id %>"><%- purchase.client_name %></span>&nbsp;(<%- purchase.mobile %>);<span style="cursor: pointer;" class="lianjie"></span></div>
+					<div class="pur_list" style="color:#8d8d8d;"><%- purchase.quantity %>个<%- purchase.peijian_name %>&nbsp;(<%- purchase.peijian_code %>)，共<%- purchase.xiaoshou_price*purchase.quantity %>元</div>
+					<% if (purchase.remark) { %>
+						<div class="pur_list"><%- purchase.remark %></div>
+					<% } %>
+				</div>
+			<% }); %>
+		</script>
+		<script id="stay_vehicles_infos" type="text/template">
+			<div class="item_client">客户</div>
+			<div class="item_mobile">手机号</div>
+			<div class="item_type">维修类别</div>
+			<div class="item_point">维修节点</div>
+			<div class="item_time">进厂时长</div>
+			<% _.forEach(vehicles, function(vehicle) { %>
+				<div class="item_client lianjie" data-id="<%- vehicle.client_id %>"><%- vehicle.client_name %></div>
+				<div class="item_mobile"><%- vehicle.client_mobile %></div>
+				<div class="item_type"><%- vehicle.repair_store %></div>
+				<div class="item_point"><%- vehicle.repair_state_name %></div>
+				<div class="item_time"><%- vehicle.hours %>小时</div>
+			<% }); %>
+		</script>
+		<script id="customers_feedback_infos" type="text/template">
+			<% _.forEach(feedbacks, function(feedback) { %>
+				<div class="item3" >
+					<div class="item5" style="color:#ccc;font-size:12px;"><span <% if (feedback.hours >100) { %>style="color:#ff0000;font-weight:600;"<% } %> ><%- feedback.hours %>小时&nbsp;&nbsp;</span><%- feedback.guanhuai_date %>&nbsp;&nbsp;&nbsp;&nbsp;<span class="lianjie" data-id="<%- feedback.client_id %>"><%- feedback.client_name %></span>&nbsp;(<%- feedback.client_mobile %>)</div>
+					<div class="item4"><%- feedback.kehu_fankui %></div>
+				</div>
+			<% }); %>
+		</script>
+		<script id="today_search_infos" type="text/template">
+			<% if (today_infos.length == 0) { %> <div  class="cursor_none">没有查询客户</div> <% } %>
+			<% _.forEach(today_infos, function(today_info) { %>
+				<div class="cursor" data-id="<%- today_info.client_id %>">
+					<div class="item"><span class="name toolong selected"><%- today_info.client_name %></span><span class="time selected"><%- today_info.time_str %></span></div>
+					<div class="item"><span class="plate toolong selected"><%- today_info.plate_numbers %></span><span class="type toolong selected"><%- today_info.chexing %></span></div>
+				</div>
+			<% }); %>
+		</script>
+		<div class="content2 hide">
+			<div id="customer" style="border:none;">
+
+			</div>
+		</div>
+		<script id="customer_info" type="text/template">
+			<div class="section" style="margin:0;">
+				<div class="title">
+					车辆
+				</div>
+				<div class="item"><span>车牌号：</span><input id="plate_numbers" value="<%- row.plate_numbers %>" readonly></input></div>
+				<div class="item"><span>车品牌：</span><input value="<%- row.car_brand %>" readonly></input></div>
+				<div class="item"><span>车型：</span><input value="<%- row.car_type %>" readonly></input></div>
+				<div class="item"><span>排量范围：</span><input value="<%- row.pailiang_type %>" readonly></input></div>
+				<div class="item"><span>车颜色：</span><input value="<%- row.car_color %>" readonly></input></div>
+				<div class="item"><span>VIN码：</span><input id="vin_no" value="<%- row.vin_no %>" readonly></input></div>
+				<div class="item"><span>发动机号：</span><input value="<%- row.engine %>" readonly></input></div>
+				<div class="item"><span>购车日期：</span><input value="<%- row.buy_car_date %>" readonly></input></div>
+				<div class="item"><span>领证日期：</span><input value="<%- row.lingzheng_date %>" readonly></input></div>
+				<div class="item"><span>年检到期：</span><input value="<%- row.nianjian_date %>" readonly></input></div>
+			</div>
+			<div class="section">
+				<div class="title">
+					客户
+				</div>
+				<div class="item"><span>客户ID：</span><input id="client_id" value="<%- row.id %>"  readonly></input></div>
+				<div class="item"><span>编码：</span><input value="<%- row.code %>" readonly></input></div>
+				<div class="item"><span>姓名：</span><input id="client_name" value="<%- row.name %>" readonly></input></div>
+				<div class="item"><span>性别：</span><input value="<%- row.sex %>" readonly></input></div>
+				<div class="item"><span>手机：</span><input id="phone_number" value="<%- row.mobile %>" readonly></input><div class="btn" id="phone_update">修改</div><div class="btn" id="phone_save">保存</div></div>
+				<div class="item"><span>身份证：</span><input value="<%- row.shenfenzheng %>" readonly></input></div>
+				<div class="item"><span>生日：</span><input value="<%- row.birthday %>" readonly></input></div>
+				<div class="item"><span>电话：</span><input value="<%- row.phone %>" readonly></input></div>
+				<div class="item"><span>地址：</span><input value="<%- row.address %>" readonly></input></div>
+				<div class="item"><span>E-mail：</span><input value="<%- row.email %>" readonly></input></div>
+
+			</div>
+			<div class="section">
+				<div class="title">
+					会员
+				</div>
+				<div class="item"><span>会员卡号：</span><input id="huiyuan_number" type="password"></input><div class="btn" id="check_member">查询</div></div>
+				<div class="item"><span>会员姓名：</span><input id="vip_name" value="<%- vip.client_name %>"  readonly></input></div>
+				<div class="item"><span>会员卡类：</span><input id="vip_type" value="<%- vip.huiyuankafenlei_name %>" readonly></input></div>
+				<div class="item"><span>手机：</span><input id="vip_mobile" value="<%- vip.mobile %>" readonly></input></div>
+				<div class="item"><span>入会日期：</span><input id="vip_ruhui_date" value="<%- vip.ruhui_date %>" readonly></input></div>
+				<div class="item"><span>车辆牌照：</span><input id="vip_plate_numbers" value="<%- vip.chepaihao %>" readonly></input></div>
+				<div class="item"><span>身份证号：</span><input id="vip_shenfenzhenghaoma" value="<%- vip.shenfenzhenghaoma %>" readonly></input></div>
+				<div class="item"><span>卡面编号：</span><input id="vip_ka_bianhao" value="<%- vip.ka_bianhao %>" readonly></input></div>
+				<div class="item"><span>状态：</span><input value="正常" readonly></input></div>
+				<div class="item"><span>余额：</span><input id="vip_zhuzhanghu_yue" value="<%- vip.zhuzhanghu_yue %>" readonly></input></div>
+			</div>
+			<% if (row.weixiu_tishi) { %>
+			<div class="section_last">
+				<div class="title">系统提醒</div>
+
+				<!-- <div class="worn"><span>零件提醒：</span><span></span></div> -->
+				<div class="worn"><span>系统提醒：</span><span><%- row.weixiu_tishi %></span></div>
+			</div>
+			<% } %>
+			<% if (purchase_infos.length > 0 ) { %>
+			<div class="section_last">
+				<div class="title">采购信息</div>
+				<% _.forEach(purchase_infos, function(purchase_info) { %>
+				<div class="line_last">
+					<div class="item"><span>配件名称：</span><input value="<%- purchase_info.peijian_name %>"  readonly></input></div>
+					<div class="item"><span>配件id：</span><input value="<%- purchase_info.peijian_id %>"  readonly></input></div>
+					<div class="item"><span>配件数量：</span><input value="<%- purchase_info.quantity %>"  readonly></input></div>
+					<div class="item"><span>配件价格：</span><input value="<%- purchase_info.xiaoshou_price %>"  readonly></input></div>
+					<div class="item"><span>到货日期：</span><input value="<%- purchase_info.promise_date %>"  readonly></input></div>
+					<div class="item"><span>备注：</span><input value="<%- purchase_info.remark %>"  readonly></input></div>
+				</div>
+				<% }); %>
+			</div>
+			<% } %>
+			<div class="section_last">
+				<div class="title">维修历史<div class="create"></div></div>
+				<% if (repairs.length == 0) { %><div id="none_repair_data">该客户没有维修记录！</div><% } %>
+				<% _.forEach(repairs, function(repair) { %>
+					<div class="line_last">
+						<div class="item" style="width:99%;font-weight: bold;">
+							<span style="margin-left:3px;<% if (repair.hours >100) { %>color:#ff0000;<% } %>">
+								<% if (repair.shoukuan_date) { %><%- repair.hours %>小时<% } else { %>未结束<% } %>
+							</span>
+							<span style="margin-left:40px;">进厂时间：<%- repair.jinchang_time %></span>
+							<% if (repair.shoukuan_date) { %><span style="margin-left:47px;">收款时间：<%- repair.shoukuan_date %></span><% } %>
+						</div>
+						<div class="item"><span>送修人：</span><input value="<%- repair.contact_name %>"  readonly></input></div>
+						<div class="item"><span>手机号：</span><input value="<%- repair.contact_mobile %>"  readonly></input></div>
+						<div class="item"><span>维修类别：</span><input value="<%- repair.repair_store %>"  readonly></input></div>
+
+						<div class="item"><span>EV里程：</span><input value="<%- repair.ev_legend %>"  readonly></input></div>
+						<div class="item"><span>里程：</span><input value="<%- repair.legend %>"  readonly></input></div>
+						<div class="item"><span>维修工时：</span><input value="<%- repair.gongshi %>"  readonly></input></div>
+
+						<div class="item"><span>维修工时费：</span><input value="<%- repair.gongshi_feiyong %>"  readonly></input></div>
+						<div class="item"><span>维修材料费：</span><input value="<%- repair.cailiao_feiyong %>"  readonly></input></div>
+						<div class="item"><span>维修总计：</span><input value="<%- repair.amount %>"  readonly></input></div>
+
+						<div class="item"><span>实际工时费：</span><input value="<%- repair.shiji_gongshi_feiyong %>"  readonly></input></div>
+						<div class="item"><span>实际材料费：</span><input value="<%- repair.shiji_cailiao_feiyong %>"  readonly></input></div>
+						<div class="item"><span>实际总计：</span><input value="<%- repair.shiji_amount %>"  readonly></input></div>
+
+						<div class="item"><span>维修门店：</span><input value="<%- repair.mendian_name %>"  readonly></input></div>
+						<div class="item"><span>维修节点：</span><input value="<%- repair.repair_state_name %>"  readonly></input></div>
+						<div class="item"><span>单据状态：</span><input value="<%- repair.order_state_name %>"  readonly></input></div>
+
+						<div class="worn2"><p class="p4">故障描述：</p><p class="p3"><%- repair.breakdown_desc %></p></div>
+						<div class="worn2"><p  class="p4">维修项目：</p><p class="p3"><% _.forEach(repair.projects, function(project) { %><%- project.repair_project_name %>;<% }); %></p></div>
+						<div class="worn2"><p class="p4">维修回访：</p><% if (repair.guanhuai) { %><p class="p3" style="<% if(repair.guanhuai.need_contact == 1) { %> color:#ff0000;font-weight:600;<% } %>"><%- repair.guanhuai.kehu_fankui %></p><% } %></div>
+						<div style="clear:both;"></div>
+					</div>
+				<% }); %>
+			</div>
+		</script>
+		<div class="content3 hide">
+			<div class="weui_mask"></div>
+			<div class="weui_dialog">
+				<div class="item" id="repair_paper">
+				</div>
+			</div>
+		</div>
+		<script id="repair_paper_infos" type="text/template">
+			<div class="head">
+				<span style="width:100%;">维修委托单</span>
+			</div>
+			<div class="main">
+				<div class="left" >
+					<div class="line">
+						<div class="font">
+							<span>送修人：</span><input id="repair_client_name"></input>
+						</div>
+						<div class="hehind">
+							<span>进厂里程：</span><input></input>
+						</div>
+					</div>
+					<div class="line">
+						<div class="font">
+							<span>送修电话：</span><input id="repair_phone_number"></input>
+						</div>
+						<div class="hehind">
+							<span>ev里程：</span><input></input>
+						</div>
+					</div>
+					<div class="line">
+						<div class="one">
+							<span>报案号：</span><input></input>
+						</div>
+					</div>
+					<div class="line2">
+						<div class="two">
+							<span>接车备注：</span><textarea cols="40" rows="2" style="resize: none;"></textarea>
+						</div>
+					</div>
+				</div>
+				<div class="right">
+					<div class="line">
+						<div class="font">
+							<span>三天回访：</span><input></input>
+						</div>
+						<div class="hehind">
+							<span>是否洗车：</span><input></input>
+						</div>
+					</div>
+					<div class="line">
+						<div class="one">
+							<span>系统提醒：</span><input></input>
+						</div>
+					</div>
+					<div class="line">
+						<div class="one">
+							<span>维修类别：</span><input></input>
+						</div>
+					</div>
+					<div class="line2">
+						<div class="two">
+							<span>故障描述：</span><textarea cols="40" rows="2" style="resize: none;"></textarea>
+						</div>
+					</div>
+				</div>
+				<div class="column">
+					<div class="columnlist">
+						<span>工时费：1100</span>
+					</div>
+					<div class="columnlist">
+						<span>折扣：10%</span>
+					</div>
+					<div class="columnlist">
+						<span>总计：10000</span>
+					</div>
+					<div style="clear:both;"></div>
+				</div>
+			</div>
+			<div class="sub_main">
+				<div class="part">
+					<div class="module">计划维修项目</div>
+				</div>
+				<div class="part" style="margin-left:0;border-top:1px solid #d9d9d9;">
+					<div class="module_list"><img /><span class="repair_add">新增</span></div>
+					<div class="split">|</div>
+					<div class="module_list"><img /><span>删除</span></div>
+					<div class="split">|</div>
+					<div class="module_list2">修改工时</div>
+					<div class="split">|</div>
+					<div class="module_list3">批量设置维修类别:</div>
+					<select></select>
+				</div>
+				<div class="part_last">
+					<div class="table_item">
+						<div class="" style="height:20px;">
+							<div style="width:870px;">
+								<div class="item_num"></div>
+								<div class="item_project">&nbsp;&nbsp;维修项目</div>
+								<div class="item_hour">&nbsp;&nbsp;工时</div>
+								<div class="item_hour">&nbsp;&nbsp;工时单价</div>
+								<div class="item_hour">&nbsp;&nbsp;工时总计</div>
+								<div class="item_type">&nbsp;&nbsp;维修类别</div>
+								<div style="clear:both;"></div>
+							</div>
+						</div>
+						<div style="overflow:auto;width: 100%;height: 170px;">
+							<div style="width:870px;">
+								<div class="borderline">
+									<div class="item_num">1</div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_hour">&nbsp;&nbsp;45</div>
+									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num">2</div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_hour">&nbsp;&nbsp;45</div>
+									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num"></div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_hour">&nbsp;&nbsp;45</div>
+									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num"></div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_hour">&nbsp;&nbsp;45</div>
+									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num"></div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_hour">&nbsp;&nbsp;45</div>
+									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num"></div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_hour">&nbsp;&nbsp;45</div>
+									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num"></div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_hour">&nbsp;&nbsp;45</div>
+									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num"></div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_hour">&nbsp;&nbsp;45</div>
+									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num"></div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_hour">&nbsp;&nbsp;45</div>
+									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num"></div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_hour">&nbsp;&nbsp;45</div>
+									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+			</div>
+			<div class="foot">
+				<input type="reset" value="取消" class="repair_cancel repair"></input>
+				<input type="submit" value="保存" class="repair_save repair"></input>
+			</div>
+		</script>
+		<div class="purchase hide">
+			<div class="weui_mask"></div>
+			<div class="weui_dialog2">
+				<div class="pur_item">
+					<div class="pur_item_title" style="">配件采购单</div>
+					<div class="section">
+						<div class="item"><span>配件编号：</span><input id="peijian_id"></input></div>
+						<div class="item"><span>配件名称：</span><input id="peijian_name"></input></div>
+						<div class="item"><span>承诺日期：</span><input type="date" style="height:16px;font-size: 12px;" id="peijian_date"></input></div>
+						<div class="item"><span>配件数量：</span><input id="peijian_num"></input></div>
+						<div class="item"><span>销售价格：</span><input id="peijian_price"></input></div>
+						<div class="item"><span>备注信息：</span><input id="pur_remark"></input></div>
+
+						<div class="item"><span>客户姓名：</span><input id="pur_client_name" readOnly></input></div>
+						<div class="item"><span>客户手机：</span><input id="pur_phone_number" readOnly></input></div>
+						<div class="item"><span>客户车牌：</span><input id="pur_plate_numbers" readOnly></input></div>
+						<div class="item"><span>客户车型：</span><input id="pur_type" readOnly></input></div>
+						<!-- <div class="item" id="remark"><span>备注信息：</span><input id="pur_remark"></input></div> -->
+					</div>
+
+					<div style="float:right;margin-right:29px;margin-top: 12px;">
+						<input type="submit" value="保存" class="pur_save two"></input>
+						<input type="reset" value="取消" class="button3"></input>
+					</div>
+				</div>
+
+			</div>
+		</div>
+		<div class="vehicle_customer hide">
+			<div class="weui_mask"></div>
+			<div class="weui_dialog3">
+				<div class="vehicle_customer_item">
+					<div class="title">车辆客户信息</div>
+					<div class="section">
+						<div class="item"><span>车牌号：</span><input value="" id="vehic_plate_number" ></input></div>
+						<div class="item">
+							<span>车品牌：</span>
+							<select id="vehic_brand">
+								<option></option>
+							</select>
+							<span style="float:right;color:#ff0000;">*</span>
+						</div>
+						<div class="item">
+							<span>车型：</span>
+							<select id="vehic_type">
+							</select>
+							<span style="float:right;color:#ff0000;">*</span>
+						</div>
+						<div class="item" >
+							<span>排量范围：</span>
+							<select id="vehic_pailiang_type">
+								<option value=""></option>
+								<option value="A">A</option>
+								<option value="B">B</option>
+								<option value="C">C</option>
+							</select>
+							<span style="float:right;color:#ff0000;">*</span>
+						</div>
+						<div class="item">
+							<span>车颜色：</span>
+							<select id="vehic_color">
+							</select>
+							<span style="float:right;color:#ff0000;">*</span>
+						</div>
+						<div class="item"><span>VIN码：</span><input id="vehic_vin"></input><span style="float:right;color:#ff0000;">*</span></div>
+						<div class="item"><span>发动机号：</span><input id="vehic_engine"></input></div>
+						<div class="item"><span>购车日期：</span><input type="date" id="vehic_buy_date"></input></div>
+						<div class="item"><span>领证日期：</span><input type="date" id="vehic_certi_date"></input></div>
+						<div class="item"><span>年检到期：</span><input  type="date" id="vehic_check_date"></input></div>
+					</div>
+					<div class="section">
+						<div class="item"><span>客户ID：</span><input id="custo_id"></input></div>
+						<div class="item"><span>编码：</span><input id="custo_code"></input></div>
+						<div class="item"><span>姓名：</span><input id="custo_name"></input><span style="float:right;color:#ff0000;">*</span></div>
+						<div class="item"><span>性别：</span>
+							<select id="custo_sex">
+								<option value=""></option>
+								<option value="男">男</option>
+								<option value="女">女</option>
+							</select>
+							<span style="float:right;color:#ff0000;">*</span>
+						</div>
+						<div class="item"><span>手机：</span><input id="custo_phone"></input><span style="float:right;color:#ff0000;">*</span></div>
+						<div class="item"><span>身份证：</span><input id="custo_identi"></input></div>
+						<div class="item"><span>生日：</span><input type="date" id="custo_birth"></input></div>
+						<div class="item"><span>电话：</span><input id="custo_mobie"></input></div>
+						<div class="item"><span>地址：</span><input id="custo_adress"></input></div>
+						<div class="item"><span>E-mail：</span><input type="email" id="custo_email"></input></div>
+					</div>
+					<div style="float:right;margin:3px;margin-right:37px;margin-bottom: 11px;margin-top: -5px;">
+						<input type="submit" value="保存" class="pur_save one"></input>
+						<input type="reset" value="取消" class="button2" ></input>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="results hide">
+			<div class="results_text">
+				查询列表
+			</div>
+			<table class="gridtable" id="results_title_infos">
+
+			</table>
+		</div>
+		<script id="customers_lists_infos" type="text/template">
+			<tr>
+				<th>姓名</th><th>手机号</th><th>车牌号</th><th>车架号</th><th>车辆信息</th>
+			</tr>
+			<% _.forEach(rows, function(row) { %>
+			<tr>
+				<td data-id="<%- row.id %>" class="number lianjie"><%- row.name %></td>
+				<td><%- row.mobile %></td>
+				<td><%- row.plate_numbers %></td>
+				<td><%- row.vin_no %></td>
+				<td><%- row.car_type %>（<%- row.car_color %>）</td>
+			</tr>
+			<% }); %>
+		</script>
+		<div style="clear:both;"></div>
+		<div class="content4 hide">
+			<div class="weui_mask"></div>
+			<div class="weui_dialog">
+				<div class="repair_item" id="repair_item_baoyang">
+					<div class="head">
+						<div class="title on" id="baoyang">保养</div>
+						<div class="title" id="repair">维修</div>
+					</div>
+					<div class="main" id="baoyang_items">
+					</div>
+					<div class="main hide" id="repair_items">
+						<div style="float:left;width:224px;height:320px;overflow-x:scroll;overflow-y:scroll;">
+							<div style="width:210px;height:300px;bord:1px solid #d9d9d9;">
+								<div class="title" style="height:20px;width:180px;">已添加项目</div>
+								<div style="height:280px;">
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
+
+								</div>
+							</div>
+						</div>
+						<div style="text-align: center;padding: 18px;float:left;width:636px;">
+							<input class="input" id="txt2" name="query" placeholder="请输入关键字查询">
+							<input class="goin" value="搜索一下" readonly>
+						</div>
+						<!-- <div>
+							<div class="repairs_item">
+								车头
+							</div>
+							<div class="repairs_item">
+								车尾
+							</div>
+							<div class="repairs_item">
+								车座
+							</div>
+							<div class="repairs_item">
+								发动机
+							</div>
+							<div class="repairs_item">
+								充电器
+							</div>
+							<div class="repairs_item">
+								毛皮沙发
+							</div>
+							<div class="repairs_item">
+								外饰
+							</div>
+							<div class="repairs_item">
+								内饰
+							</div>
+							<div class="repairs_item">
+								充电桩
+							</div>
+							<div class="repairs_item">
+								保险杠
+							</div>
+							<div class="repairs_item">
+								漏电
+							</div>
+							<div class="repairs_item">
+								漏油
+							</div>
+							<div class="repairs_item">
+								充电桩
+							</div>
+							<div class="repairs_item">
+								保险杠
+							</div>
+							<div class="repairs_item">
+								漏电
+							</div>
+							<div class="repairs_item">
+								漏油
+							</div>
+							<div class="repairs_item">
+								充电桩
+							</div>
+							<div class="repairs_item">
+								保险杠
+							</div>
+							<div class="repairs_item">
+								漏电
+							</div>
+							<div class="repairs_item">
+								漏油
+							</div>
+						</div> -->
+					</div>
+
+					<div class="foot">
+						<input type="reset" value="取消" class="baoyang_cancel"></input>
+						<input type="submit" value="保存" class="baoyang_save"></input>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script id="baoyang_items_infos" type="text/template">
+			<div>
+				<div class="baoyang_item">
+					定期保养
+				</div>
+				<div class="baoyang_item">
+					首保
+				</div>
+				<div class="baoyang_item">
+					精品
+				</div>
+				<div class="baoyang_item">
+					新能源一保
+				</div>
+				<div class="baoyang_item">
+					新能源二保
+				</div>
+				<div class="baoyang_item">
+					新能源三保
+				</div>
+			</div>
+		</script>
+	</div>
+	<p class="p1">
+		<span class="span1">客服电话：021-60489399</span>
+		<span class="span2">客服手机：15868881999</span>
+		<span class="span3">客服邮箱：haimingluo@ioioinfo.com</span>
+	</p>
+</body>
+</html>

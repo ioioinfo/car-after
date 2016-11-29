@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1">
+<title>登入</title>
+<script src="http://libs.baidu.com/jquery/2.0.3/jquery.min.js" type="text/javascript"></script>
+<script src="js/lodash.min.js" type="text/javascript"></script>
+<script src="css/reset.css" type="text/css"></script>
+<style type="text/css">
+	html, body {
+	    margin: 0px;
+	    height: 100%;
+	}
+	body {
+	    width: 100%;
+	    height: 100%;
+	    margin: 0;
+	    padding: 0;
+	    background-size: cover;
+	    overflow: hidden;
+	    background-position: center center;
+	    background-image: url(/images/BYD_bg.jpg);
+	}
+	p {
+		display: block;
+		-webkit-margin-before: 1em;
+		-webkit-margin-after: 1em;
+		-webkit-margin-start: 0px;
+		-webkit-margin-end: 0px;
+	}
+	p {
+	    font-size: 10px;
+	}
+	.main-login {
+	    width: 100%;
+	    height: auto;
+	    margin-left: auto;
+	    margin-right: auto;
+	}
+	.login-logo {
+	    width: 520px;
+	    height: 200px;
+	    margin-left: auto;
+	    margin-right: auto;
+	    margin-top: 50px;
+	    background-repeat: no-repeat;
+	    background-position: center center;
+	}
+	.login-content {
+	    width: 420px;
+	    height: 255px;
+	    background: #f5f8fb;
+	    margin-left: auto;
+	    margin-right: auto;
+	    padding: 5px;
+	    border: 2px solid #f0f7fb;
+	    -moz-border-radius: 5px;
+	    -webkit-border-radius: 5px;
+	    border-radius: 5px;
+	    filter: alpha(opacity=80);
+	    -moz-opacity: 0.8;
+	    opacity: 0.8;
+	    text-align: center;
+	}
+	.login-info {
+	    width: 300px;
+	    height: 30px;
+	    margin-left: auto;
+	    margin-right: auto;
+	    border: 2px solid #f0f7fb;
+	    -moz-border-radius: 5px;
+	    -webkit-border-radius: 5px;
+	    border-radius: 5px;
+	    margin-top: 10px;
+	}
+	.login-oper {
+	    width: 300px;
+	    height: 30px;
+	    line-height: 20px;
+	    margin-left: auto;
+	    margin-right: auto;
+	    margin-top: 20px;
+	    font-family: Verdana, Geneva, sans-serif;
+	    font-size: 12px;
+	}
+	.login-input {
+	    width: 130px;
+	    height: 25px;
+	    line-height: 25px;
+	    background: #ffffff;
+	    border: none;
+	    margin: 0;
+	    padding: 0;
+	    padding-left: 2px;
+	}
+	.login-btn {
+	    width: 70px;
+	    height: 25px;
+	    border: none;
+	    background: #3385ff;
+	    color: #ffffff;
+	    -moz-border-radius: 5px;
+	    -webkit-border-radius: 5px;
+	    border-radius: 5px;
+	    margin-right: 30px;
+	}
+	.login-reset {
+	    width: 70px;
+	    height: 25px;
+	    border: none;
+	    background: #7c7777;
+	    color: #ffffff;
+	    -moz-border-radius: 5px;
+	    -webkit-border-radius: 5px;
+	    border-radius: 5px;
+	}
+
+</style>
+<script>
+$(function(){
+	$("#btn_login").click(function(){
+		var username = $("#username").val();
+		var password = $("#password").val();
+		$.get("/login_check",{username: username,password: password},function(data,status){
+			location.href = "/";
+		});
+	});
+	$("#password").keypress(function(e){
+		var key = e.which;
+		var username = $("#username").val();
+		var password = $("#password").val();
+		if (key == 13) {
+			$.get("/login_check",{username: username,password: password},function(data,status){
+				location.href = "/";
+			});
+		}
+	});
+});
+</script>
+</head>
+<body>
+	<div class="main-login">
+		<div class="login-logo">
+		</div>
+		<div class="login-content"><img src="images/BYD_hongren.png" width="236" height="92" />
+			<div class="login-info">用户名：
+				<input name="username" id="username" type="text" onblur="" value="" class="login-input"/>
+			</div>
+			<div class="login-info">密&nbsp;码：
+				<input name="password" id="password" type="password" onblur="" value="" class="login-input"/>
+			</div>
+			<div class="login-oper">
+				<p>
+					<input type="button"  id="btn_login" value="登 录" class="login-btn"/>
+					<input name="" type="reset" value="取 消" class="login-reset"/>
+				</p>
+			</div>
+			<div>
+				<p>&nbsp;</p>
+				<p class="ICP">Copright 2003-2016 上海弘仁汽车集团 沪ICP10041286号</p>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

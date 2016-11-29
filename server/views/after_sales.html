@@ -6,6 +6,7 @@
 <title>BYD售后服务</title>
 <script src="http://libs.baidu.com/jquery/2.0.3/jquery.min.js" type="text/javascript"></script>
 <script src="js/lodash.min.js" type="text/javascript"></script>
+<script src="js/jquery.page.js" type="text/javascript"></script>
 <script src="css/reset.css" type="text/css"></script>
 <script>
 $(function() {
@@ -26,6 +27,7 @@ $(function() {
 	var results = $(".results");
 	var button2 = $(".button2");
 	var button3 = $(".button3");
+	var repair_item_status = 0;
 	var jixiaos = {{jixiaos|safe}};
 	var today_infos = {{rows|safe}};
 	var feedbacks = {{feedbacks|safe}};
@@ -33,6 +35,7 @@ $(function() {
 	var purchases = {{purchases|safe}};
 	var vehicle_total_infos;
 	var search_result;
+	var repair_item_infos = {};
 	var page_status = 1;
 	var content3 = $(".content3");
 	var content4 = $(".content4");
@@ -40,6 +43,13 @@ $(function() {
 		"time" :0,
 		"running" :false
 	};
+	//分页样式
+	$(".tcdPageCode").createPage({
+		pageCount:20,
+		current:1,
+		backFn:function(p){
+		}
+	});
 	//维修委托单
 	var repair_paper = function(){
 		var t = _.template($("#repair_paper_infos").html());
@@ -68,6 +78,7 @@ $(function() {
 		$(".baoyang_item").removeClass("on");
 		$("#baoyang_items").addClass("hide");
 		$("#repair_items").removeClass("hide");
+		repair_item_status = 1;
 	});
 	//点击保养
 	$("#baoyang").click(function(){
@@ -75,8 +86,9 @@ $(function() {
 		$("#repair").removeClass("on");
 		$("#baoyang_items").removeClass("hide");
 		$("#repair_items").addClass("hide");
-		$(".repairs_item").removeClass("on");
+		repair_item_status = 0;
 	});
+	//点击保养项目
 	$(".baoyang_item").click(function(){
 		if ($(this).attr("class") != "baoyang_item") {
 			$(this).removeClass("on");
@@ -84,13 +96,61 @@ $(function() {
 		}
 		$(this).addClass("on");
 	});
-	$(".repairs_item").click(function(){
-		if ($(this).attr("class") != "repairs_item") {
-			$(this).removeClass("on");
+	//添加点击维修项目高亮
+	$(".repair_search_result_title").click(function() {
+		$(".repair_search_result_title").removeClass("bord");
+		$(this).addClass("bord");
+	});
+	//双击添加到左边
+	$(".repair_search_result_title").dblclick(function(){
+		var name = $(this).data("id");
+		$(".repair_fin_items").append("<div class='repair_cre_detail'>"+name+"</div>");
+	});
+	//左边单击高亮
+	$(".repair_cre_detail").click(function(){
+		$(".repair_cre_detail").removeClass("bord");
+		$(this).addClass("bord");
+	});
+	var repair_cre_detail_highlight = function(){
+
+	};
+	//左边双击移除
+	var repair_remove = function(){
+
+	};
+	$(".repair_cre_detail").dblclick(function(){
+		$(this).remove();
+	});
+	//修改工时
+	$("#change_hours").click(function(){
+		change_hours();
+	});
+	var change_hours = function(){
+		$(".borderline.bord").children(".item_hour").css("background","#dedede");
+		$(".borderline.bord").children(".item_hour").attr("contenteditable","true");
+	};
+	//成功添加维修项目
+	$(".baoyang_save").click(function(){
+		if (repair_item_status == 0) {
 			return;
 		}
-		$(this).addClass("on");
+		return;
 	});
+	//批量修改类型
+	$("#change_type").change(function(){
+		change_repair_type();
+	});
+	var change_repair_type = function(){
+		var type = $("#change_type").val();
+		$(".borderline").children(".item_type").html("&nbsp;&nbsp;"+type);
+	};
+	//维修项目高亮删除
+	$(".repair_delete").click(function(){
+		repair_item_delete();
+	});
+	var repair_item_delete = function(){
+		$(".borderline.bord").remove();
+	};
 	//点击维修项目高亮
 	$(".borderline").click(function(){
 		$(".borderline").removeClass("bord");
@@ -1854,6 +1914,22 @@ function end_query(){
 		border-right:1px solid #d9d9d9;
 		line-height: 20px;
 	}
+	.item_per_price{
+		float: left;
+		height: 20px;
+		font-size: 12px;
+		width:14%;
+		border-right:1px solid #d9d9d9;
+		line-height: 20px;
+	}
+	.item_tot_price{
+		float: left;
+		height: 20px;
+		font-size: 12px;
+		width:14%;
+		border-right:1px solid #d9d9d9;
+		line-height: 20px;
+	}
 	.item_type{
 		float: left;
 		height: 20px;
@@ -1873,7 +1949,7 @@ function end_query(){
 		cursor: pointer;
 	}
 	.repair_item{
-		height:420px;
+		height:455px;
 	}
 	.repair_item .head{
 		height: 51px;
@@ -1883,7 +1959,7 @@ function end_query(){
 	.head .title{
 		padding:15px;
 		float:left;
-		width: 46%;
+		width: 418px;
 		text-align: center;
 		cursor: pointer;
 		border-bottom: 1px solid #fff;
@@ -1899,22 +1975,11 @@ function end_query(){
 		cursor: pointer;
 		border: 1px solid #fff;
 	}
-	.repairs_item{
-		float:left;
-		width:192px;
-		margin:10px;
-		text-align:center;
-		cursor: pointer;
-		border: 1px solid #fff;
-	}
-	.repairs_item.on{
-		border:1px solid #ff0000;
-	}
 	.baoyang_item.on{
 		border:1px solid #ff0000;
 	}
 	.repair_item .main{
-		height: 340px;
+		height: 376px;
 	}
 	.repair_item .foot{
 		height: 30px;
@@ -1930,6 +1995,129 @@ function end_query(){
 		width: 158px;
 		margin-right: 5px;
 		height: 25px;
+	}
+	.repair_cre{
+		width:270px;
+		height:300px;
+		bord:1px solid #d9d9d9;
+	}
+	.repair_cre .title{
+		height: 20px;
+	    width: 270px;
+	    margin: 24px auto 24px;
+	    text-align: center;
+	}
+	.repair_cre_detail{
+		white-space: nowrap;
+		height: 26px;
+		line-height: 26px;
+		font-size: 12px;
+		padding-left: 5px;
+		border-bottom: 1px solid #dedede;
+		cursor: default;;
+	}
+	.repair_cre_search{
+		text-align: center;
+		float:left;
+		width:596px;
+		margin-top: 21px;
+		margin-left: 20px;
+		height: 310px;
+	}
+	.repair_search_result{
+		border: 1px solid #dedede;
+		height: 266px;
+		width: 590px;
+		margin: 15px -8px 0;
+	}
+	.repair_search_result_title{
+		height: 26px;
+		border-bottom: 1px solid #dedede;
+		cursor: default;
+	}
+	.repair_search_result_title2{
+		height: 26px;
+		border-bottom: 1px solid #dedede;
+		cursor: default;
+	}
+	.repair_search_result_num{
+		float:left;
+		height:26px;
+		font-size:12px;
+		line-height:26px;
+		width:30px;
+		border-right: 1px solid #dedede;
+	}
+	.repair_search_result_name{
+		float:left;
+		height:26px;
+		font-size:12px;
+		line-height:26px;
+		width:325px;
+		text-align: left;
+		border-right: 1px solid #dedede;
+	}
+	.repair_search_result_money{
+		float:left;
+		height:26px;
+		font-size:12px;
+		line-height:26px;
+		width:60px;
+		text-align: left;
+		border-right: 1px solid #dedede;
+	}
+	.repair_search_result_hours{
+		float:left;
+		height:26px;
+		font-size:12px;
+		line-height:26px;
+		width:76px;
+		text-align: left;
+		border-right: 1px solid #dedede;
+	}
+	.repair_search_result_tot{
+		float:left;
+		height:26px;
+		font-size:12px;
+		line-height:26px;
+		width:76px;
+		text-align: left;
+	}
+	.borderline.bord .item_project, .borderline.bord .item_hour,
+	 .borderline.bord .item_type, .borderline.bord .item_num,
+	  .borderline.bord .item_per_price, .borderline.bord .item_tot_price{
+		color:white;
+	}
+	.repair_search_result_title.bord .repair_search_result_num,
+	.repair_search_result_title.bord .repair_search_result_name,
+	.repair_search_result_title.bord .repair_search_result_hours,
+	.repair_search_result_title.bord .repair_search_result_tot,
+	.repair_search_result_title.bord .repair_search_result_money{
+		color:white;
+	}
+	.repair_fin_items{
+		height:296px;
+		overflow:auto;
+		border:1px solid #dedede;
+	}
+	.repair_delete{
+		cursor: pointer;
+	}
+	.borderline:first-child {
+		border-top: none;
+	}
+	a{ text-decoration:none;}
+	a:hover{ text-decoration:none;}
+	.tcdPageCode{padding: 7px 20px;text-align: left;color: #ccc;text-align:center;}
+	.tcdPageCode a{display: inline-block;color: #428bca;display: inline-block;height: 25px;	line-height: 25px;	padding: 0 10px;border: 1px solid #ddd;	margin: 0 2px;border-radius: 4px;vertical-align: middle;}
+	.tcdPageCode a:hover{text-decoration: none;border: 1px solid #428bca;}
+	.tcdPageCode span.current{display: inline-block;height: 25px;line-height: 25px;padding: 0 10px;margin: 0 2px;color: #fff;background-color: #428bca;	border: 1px solid #428bca;border-radius: 4px;vertical-align: middle;}
+	.tcdPageCode span.disabled{	display: inline-block;height: 25px;line-height: 25px;padding: 0 10px;margin: 0 2px;	color: #bfbfbf;background: #f2f2f2;border: 1px solid #bfbfbf;border-radius: 4px;vertical-align: middle;}
+	.repair_cre_detail.bord{
+		color:white;
+	}
+	#change_hours{
+		cursor: pointer;
 	}
 </style>
 </head>
@@ -2261,22 +2449,29 @@ function end_query(){
 				<div class="part" style="margin-left:0;border-top:1px solid #d9d9d9;">
 					<div class="module_list"><img /><span class="repair_add">新增</span></div>
 					<div class="split">|</div>
-					<div class="module_list"><img /><span>删除</span></div>
+					<div class="module_list"><img /><span class="repair_delete">删除</span></div>
 					<div class="split">|</div>
-					<div class="module_list2">修改工时</div>
+					<div class="module_list2" id="change_hours">修改工时</div>
 					<div class="split">|</div>
 					<div class="module_list3">批量设置维修类别:</div>
-					<select></select>
+					<select id="change_type">
+						<option value="" disabled selected></option>
+						<option value="一般维修">一般维修</option>
+						<option value="定期保养">定期保养</option>
+						<option value="厂家配件三包">厂家配件三包</option>
+						<option value="首保">首保</option>
+						<option value="供应商三包">供应商三包</option>
+					</select>
 				</div>
 				<div class="part_last">
 					<div class="table_item">
 						<div class="" style="height:20px;">
-							<div style="width:870px;">
+							<div style="width:870px;border-bottom:1px solid #dedede;">
 								<div class="item_num"></div>
 								<div class="item_project">&nbsp;&nbsp;维修项目</div>
 								<div class="item_hour">&nbsp;&nbsp;工时</div>
-								<div class="item_hour">&nbsp;&nbsp;工时单价</div>
-								<div class="item_hour">&nbsp;&nbsp;工时总计</div>
+								<div class="item_per_price">&nbsp;&nbsp;工时单价</div>
+								<div class="item_tot_price">&nbsp;&nbsp;工时总计</div>
 								<div class="item_type">&nbsp;&nbsp;维修类别</div>
 								<div style="clear:both;"></div>
 							</div>
@@ -2287,8 +2482,8 @@ function end_query(){
 									<div class="item_num">1</div>
 									<div class="item_project">&nbsp;&nbsp;保养28项</div>
 									<div class="item_hour">&nbsp;&nbsp;10</div>
-									<div class="item_hour">&nbsp;&nbsp;45</div>
-									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_per_price">&nbsp;&nbsp;45</div>
+									<div class="item_tot_price">&nbsp;&nbsp;450</div>
 									<div class="item_type">&nbsp;&nbsp;一般维修</div>
 									<div style="clear:both;"></div>
 								</div>
@@ -2296,8 +2491,44 @@ function end_query(){
 									<div class="item_num">2</div>
 									<div class="item_project">&nbsp;&nbsp;保养28项</div>
 									<div class="item_hour">&nbsp;&nbsp;10</div>
-									<div class="item_hour">&nbsp;&nbsp;45</div>
-									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_per_price">&nbsp;&nbsp;45</div>
+									<div class="item_tot_price">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num">3</div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_per_price">&nbsp;&nbsp;45</div>
+									<div class="item_tot_price">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num">4</div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_per_price">&nbsp;&nbsp;45</div>
+									<div class="item_tot_price">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num">5</div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_per_price">&nbsp;&nbsp;45</div>
+									<div class="item_tot_price">&nbsp;&nbsp;450</div>
+									<div class="item_type">&nbsp;&nbsp;一般维修</div>
+									<div style="clear:both;"></div>
+								</div>
+								<div class="borderline">
+									<div class="item_num">6</div>
+									<div class="item_project">&nbsp;&nbsp;保养28项</div>
+									<div class="item_hour">&nbsp;&nbsp;10</div>
+									<div class="item_per_price">&nbsp;&nbsp;45</div>
+									<div class="item_tot_price">&nbsp;&nbsp;450</div>
 									<div class="item_type">&nbsp;&nbsp;一般维修</div>
 									<div style="clear:both;"></div>
 								</div>
@@ -2305,8 +2536,8 @@ function end_query(){
 									<div class="item_num"></div>
 									<div class="item_project">&nbsp;&nbsp;保养28项</div>
 									<div class="item_hour">&nbsp;&nbsp;10</div>
-									<div class="item_hour">&nbsp;&nbsp;45</div>
-									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_per_price">&nbsp;&nbsp;45</div>
+									<div class="item_tot_price">&nbsp;&nbsp;450</div>
 									<div class="item_type">&nbsp;&nbsp;一般维修</div>
 									<div style="clear:both;"></div>
 								</div>
@@ -2314,8 +2545,8 @@ function end_query(){
 									<div class="item_num"></div>
 									<div class="item_project">&nbsp;&nbsp;保养28项</div>
 									<div class="item_hour">&nbsp;&nbsp;10</div>
-									<div class="item_hour">&nbsp;&nbsp;45</div>
-									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_per_price">&nbsp;&nbsp;45</div>
+									<div class="item_tot_price">&nbsp;&nbsp;450</div>
 									<div class="item_type">&nbsp;&nbsp;一般维修</div>
 									<div style="clear:both;"></div>
 								</div>
@@ -2323,53 +2554,8 @@ function end_query(){
 									<div class="item_num"></div>
 									<div class="item_project">&nbsp;&nbsp;保养28项</div>
 									<div class="item_hour">&nbsp;&nbsp;10</div>
-									<div class="item_hour">&nbsp;&nbsp;45</div>
-									<div class="item_hour">&nbsp;&nbsp;450</div>
-									<div class="item_type">&nbsp;&nbsp;一般维修</div>
-									<div style="clear:both;"></div>
-								</div>
-								<div class="borderline">
-									<div class="item_num"></div>
-									<div class="item_project">&nbsp;&nbsp;保养28项</div>
-									<div class="item_hour">&nbsp;&nbsp;10</div>
-									<div class="item_hour">&nbsp;&nbsp;45</div>
-									<div class="item_hour">&nbsp;&nbsp;450</div>
-									<div class="item_type">&nbsp;&nbsp;一般维修</div>
-									<div style="clear:both;"></div>
-								</div>
-								<div class="borderline">
-									<div class="item_num"></div>
-									<div class="item_project">&nbsp;&nbsp;保养28项</div>
-									<div class="item_hour">&nbsp;&nbsp;10</div>
-									<div class="item_hour">&nbsp;&nbsp;45</div>
-									<div class="item_hour">&nbsp;&nbsp;450</div>
-									<div class="item_type">&nbsp;&nbsp;一般维修</div>
-									<div style="clear:both;"></div>
-								</div>
-								<div class="borderline">
-									<div class="item_num"></div>
-									<div class="item_project">&nbsp;&nbsp;保养28项</div>
-									<div class="item_hour">&nbsp;&nbsp;10</div>
-									<div class="item_hour">&nbsp;&nbsp;45</div>
-									<div class="item_hour">&nbsp;&nbsp;450</div>
-									<div class="item_type">&nbsp;&nbsp;一般维修</div>
-									<div style="clear:both;"></div>
-								</div>
-								<div class="borderline">
-									<div class="item_num"></div>
-									<div class="item_project">&nbsp;&nbsp;保养28项</div>
-									<div class="item_hour">&nbsp;&nbsp;10</div>
-									<div class="item_hour">&nbsp;&nbsp;45</div>
-									<div class="item_hour">&nbsp;&nbsp;450</div>
-									<div class="item_type">&nbsp;&nbsp;一般维修</div>
-									<div style="clear:both;"></div>
-								</div>
-								<div class="borderline">
-									<div class="item_num"></div>
-									<div class="item_project">&nbsp;&nbsp;保养28项</div>
-									<div class="item_hour">&nbsp;&nbsp;10</div>
-									<div class="item_hour">&nbsp;&nbsp;45</div>
-									<div class="item_hour">&nbsp;&nbsp;450</div>
+									<div class="item_per_price">&nbsp;&nbsp;45</div>
+									<div class="item_tot_price">&nbsp;&nbsp;450</div>
 									<div class="item_type">&nbsp;&nbsp;一般维修</div>
 									<div style="clear:both;"></div>
 								</div>
@@ -2502,8 +2688,7 @@ function end_query(){
 			</tr>
 			<% }); %>
 		</script>
-		<div style="clear:both;"></div>
-		<div class="content4 hide">
+		<div class="content4">
 			<div class="weui_mask"></div>
 			<div class="weui_dialog">
 				<div class="repair_item" id="repair_item_baoyang">
@@ -2514,102 +2699,127 @@ function end_query(){
 					<div class="main" id="baoyang_items">
 					</div>
 					<div class="main hide" id="repair_items">
-						<div style="float:left;width:224px;height:320px;overflow-x:scroll;overflow-y:scroll;">
-							<div style="width:210px;height:300px;bord:1px solid #d9d9d9;">
-								<div class="title" style="height:20px;width:180px;">已添加项目</div>
-								<div style="height:280px;">
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-									<div style="white-space: nowrap;">473QA-1132012_节气门体出水软管_M00000 </div>
-
+						<div style="float:left;width:270px;margin-left:10px;">
+							<div class="repair_cre">
+								<div class="title">已添加维修项目</div>
+								<div class="repair_fin_items">
+									<div class="repair_cre_detail">右前保险杠半喷;右前叶子板喷漆</div>
+									<div class="repair_cre_detail">右前门整形（A）;右前门喷漆（扇）</div>
+									<div class="repair_cre_detail">更换右后门;右后门喷漆（扇）</div>
+									<div class="repair_cre_detail">比亚迪精诚服务十周年秋季关爱</div>
+									<div class="repair_cre_detail">秦更换驱动电机控制器（DC）</div>
+									<div class="repair_cre_detail">焊补或更换空调高压管;焊补或更换空调低压管</div>
 								</div>
 							</div>
 						</div>
-						<div style="text-align: center;padding: 18px;float:left;width:636px;">
+						<div class="repair_cre_search" style="">
 							<input class="input" id="txt2" name="query" placeholder="请输入关键字查询">
 							<input class="goin" value="搜索一下" readonly>
+							<div class="repair_search_result" >
+								<div class="repair_search_result_title2">
+									<div class="repair_search_result_num"></div>
+									<div class="repair_search_result_name">&nbsp;&nbsp;维修项目名称</div>
+									<div class="repair_search_result_money">&nbsp;&nbsp;工时</div>
+									<div class="repair_search_result_hours">&nbsp;&nbsp;工时单价</div>
+									<div class="repair_search_result_tot">&nbsp;&nbsp;工时总计</div>
+									<div class="clear:both;"></div>
+								</div>
+								<div class="repair_search_result_infos" style="height:240px;overflow:auto;">
+									<div class="repair_search_result_title" data-id="右前保险杠半喷;右前叶子板喷漆">
+										<div class="repair_search_result_num">1</div>
+										<div class="repair_search_result_name">&nbsp;&nbsp;右前保险杠半喷;右前叶子板喷漆</div>
+										<div class="repair_search_result_money">&nbsp;&nbsp;10</div>
+										<div class="repair_search_result_hours">&nbsp;&nbsp;45</div>
+										<div class="repair_search_result_tot">&nbsp;&nbsp;450</div>
+										<div class="clear:both;"></div>
+									</div>
+									<div class="repair_search_result_title" data-id="焊补或更换空调高压管;焊补或更换空调低压管">
+										<div class="repair_search_result_num">2</div>
+										<div class="repair_search_result_name">&nbsp;&nbsp;焊补或更换空调高压管;焊补或更换空调低压管</div>
+										<div class="repair_search_result_money">&nbsp;&nbsp;40</div>
+										<div class="repair_search_result_hours">&nbsp;&nbsp;50</div>
+										<div class="repair_search_result_tot">&nbsp;&nbsp;2000</div>
+										<div class="clear:both;"></div>
+									</div>
+									<div class="repair_search_result_title"  data-id="右前保险杠半喷;右前叶子板喷漆">
+										<div class="repair_search_result_num">3</div>
+										<div class="repair_search_result_name">&nbsp;&nbsp;右前保险杠半喷;右前叶子板喷漆</div>
+										<div class="repair_search_result_money">&nbsp;&nbsp;10</div>
+										<div class="repair_search_result_hours">&nbsp;&nbsp;45</div>
+										<div class="repair_search_result_tot">&nbsp;&nbsp;450</div>
+										<div class="clear:both;"></div>
+									</div>
+									<div class="repair_search_result_title">
+										<div class="repair_search_result_num"></div>
+										<div class="repair_search_result_name">&nbsp;&nbsp;右前保险杠半喷;右前叶子板喷漆</div>
+										<div class="repair_search_result_money">&nbsp;&nbsp;10</div>
+										<div class="repair_search_result_hours">&nbsp;&nbsp;45</div>
+										<div class="repair_search_result_tot">&nbsp;&nbsp;450</div>
+										<div class="clear:both;"></div>
+									</div>
+									<div class="repair_search_result_title">
+										<div class="repair_search_result_num"></div>
+										<div class="repair_search_result_name">&nbsp;&nbsp;焊补或更换空调高压管;焊补或更换空调低压管</div>
+										<div class="repair_search_result_money">&nbsp;&nbsp;40</div>
+										<div class="repair_search_result_hours">&nbsp;&nbsp;50</div>
+										<div class="repair_search_result_tot">&nbsp;&nbsp;2000</div>
+										<div class="clear:both;"></div>
+									</div>
+									<div class="repair_search_result_title">
+										<div class="repair_search_result_num"></div>
+										<div class="repair_search_result_name">&nbsp;&nbsp;右前保险杠半喷;右前叶子板喷漆</div>
+										<div class="repair_search_result_money">&nbsp;&nbsp;10</div>
+										<div class="repair_search_result_hours">&nbsp;&nbsp;45</div>
+										<div class="repair_search_result_tot">&nbsp;&nbsp;450</div>
+										<div class="clear:both;"></div>
+									</div>
+									<div class="repair_search_result_title">
+										<div class="repair_search_result_num"></div>
+										<div class="repair_search_result_name">&nbsp;&nbsp;秦更换驱动电机控制器（DC）</div>
+										<div class="repair_search_result_money">&nbsp;&nbsp;20</div>
+										<div class="repair_search_result_hours">&nbsp;&nbsp;40</div>
+										<div class="repair_search_result_tot">&nbsp;&nbsp;800</div>
+										<div class="clear:both;"></div>
+									</div>
+									<div class="repair_search_result_title">
+										<div class="repair_search_result_num"></div>
+										<div class="repair_search_result_name">&nbsp;&nbsp;右前保险杠半喷;右前叶子板喷漆</div>
+										<div class="repair_search_result_money">&nbsp;&nbsp;10</div>
+										<div class="repair_search_result_hours">&nbsp;&nbsp;45</div>
+										<div class="repair_search_result_tot">&nbsp;&nbsp;450</div>
+										<div class="clear:both;"></div>
+									</div>
+									<div class="repair_search_result_title">
+										<div class="repair_search_result_num"></div>
+										<div class="repair_search_result_name">&nbsp;&nbsp;焊补或更换空调高压管;焊补或更换空调低压管</div>
+										<div class="repair_search_result_money">&nbsp;&nbsp;40</div>
+										<div class="repair_search_result_hours">&nbsp;&nbsp;50</div>
+										<div class="repair_search_result_tot">&nbsp;&nbsp;2000</div>
+										<div class="clear:both;"></div>
+									</div>
+
+									<div class="repair_search_result_title">
+										<div class="repair_search_result_num"></div>
+										<div class="repair_search_result_name">&nbsp;&nbsp;秦更换驱动电机控制器（DC）</div>
+										<div class="repair_search_result_money">&nbsp;&nbsp;20</div>
+										<div class="repair_search_result_hours">&nbsp;&nbsp;40</div>
+										<div class="repair_search_result_tot">&nbsp;&nbsp;800</div>
+										<div class="clear:both;"></div>
+									</div>
+
+
+								</div>
+							</div>
+							<div class="tcdPageCode"></div>
 						</div>
-						<!-- <div>
-							<div class="repairs_item">
-								车头
-							</div>
-							<div class="repairs_item">
-								车尾
-							</div>
-							<div class="repairs_item">
-								车座
-							</div>
-							<div class="repairs_item">
-								发动机
-							</div>
-							<div class="repairs_item">
-								充电器
-							</div>
-							<div class="repairs_item">
-								毛皮沙发
-							</div>
-							<div class="repairs_item">
-								外饰
-							</div>
-							<div class="repairs_item">
-								内饰
-							</div>
-							<div class="repairs_item">
-								充电桩
-							</div>
-							<div class="repairs_item">
-								保险杠
-							</div>
-							<div class="repairs_item">
-								漏电
-							</div>
-							<div class="repairs_item">
-								漏油
-							</div>
-							<div class="repairs_item">
-								充电桩
-							</div>
-							<div class="repairs_item">
-								保险杠
-							</div>
-							<div class="repairs_item">
-								漏电
-							</div>
-							<div class="repairs_item">
-								漏油
-							</div>
-							<div class="repairs_item">
-								充电桩
-							</div>
-							<div class="repairs_item">
-								保险杠
-							</div>
-							<div class="repairs_item">
-								漏电
-							</div>
-							<div class="repairs_item">
-								漏油
-							</div>
-						</div> -->
+
 					</div>
 
 					<div class="foot">
 						<input type="reset" value="取消" class="baoyang_cancel"></input>
 						<input type="submit" value="保存" class="baoyang_save"></input>
 					</div>
+
 				</div>
 			</div>
 		</div>
@@ -2636,6 +2846,7 @@ function end_query(){
 			</div>
 		</script>
 	</div>
+	<div style="clear:both;"></div>
 	<p class="p1">
 		<span class="span1">客服电话：021-60489399</span>
 		<span class="span2">客服手机：15868881999</span>

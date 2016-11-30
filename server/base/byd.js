@@ -72,7 +72,12 @@ var search_list_today = function(id,cb) {
 	url = url + id;
 	do_get_method(url,cb);
 };
-
+//登入获取员工信息，门店id等
+var find_employee_info = function(user_id,cb){
+	var url = "http://211.149.245.32:8787/person/";
+	url = url + user_id;
+	do_get_method(url,cb);
+}
 var repair_car_base = function(user_id, cb){
 	var url = "http://211.149.245.32:8787/after/repair_car_base?userid=" + user_id;
 	do_get_method(url,cb);
@@ -101,6 +106,13 @@ var stay_vehicles = function(user_id,cb){
 //客户采购信息
 var purchase_list = function(user_id,cb){
 	var url = "http://211.149.245.32:8787/after/list_mendian_apply_order_by_user?user_id=" + user_id;
+	do_get_method(url,cb);
+};
+//查询维修项目
+var search_repair_items = function(user_id,store_id,pailiang_type,q,cb){
+	var url = "http://211.149.245.32:8787/after/search_repair_project?user_id=1" + user_id;
+	url = url + "&store_id=" + store_id + "&pailiang_type=" + pailiang_type + "&q=" + q;
+	console.log(url);
 	do_get_method(url,cb);
 };
 //查询会员信息
@@ -147,8 +159,8 @@ var update_phone_number = function(data, cb){
  					if (!user_id) {
  						return reply.redirect("/login");
  					}
-					var ep = eventproxy.create("rows", "feedbacks", "vehicles", "purchases", "jixiaos", function (rows, feedbacks, vehicles, purchases, jixiaos) {
-						return reply.view('after_sales', {"rows":rows,"feedbacks":feedbacks,"vehicles":vehicles,"purchases":purchases,"jixiaos":jixiaos});
+					var ep = eventproxy.create("rows", "feedbacks", "vehicles", "purchases", "jixiaos", "employee", function (rows, feedbacks, vehicles, purchases, jixiaos, employee) {
+						return reply.view('after_sales', {"rows":rows,"feedbacks":feedbacks,"vehicles":vehicles,"purchases":purchases,"jixiaos":jixiaos,"employee":employee});
 					});
 					search_list_today(user_id,function(err, content) {
 						var rows = JSON.stringify(content.rows);
@@ -169,6 +181,10 @@ var update_phone_number = function(data, cb){
 					employee_kpi(user_id,function(err, content){
 						var jixiaos = JSON.stringify(content);
 						ep.emit("jixiaos", jixiaos);
+					});
+					find_employee_info(user_id,function(err, content){
+						var employee = JSON.stringify(content.row);
+						ep.emit("employee", employee);
 					});
 				});
 			}
@@ -273,6 +289,7 @@ var update_phone_number = function(data, cb){
 						console.log(content);
 						var row = content.row;
 						var state = {user_id:row.id};
+						var user_id = row.id;
 						return reply({"success":true,message:"ok","row":row}).state('cookie', state, {ttl:10*365*24*60*60*1000});
 					} else {
 						return reply({"success":false,message:err});
@@ -464,6 +481,35 @@ var update_phone_number = function(data, cb){
 							console.log("content:"+content);
 							if (content.success) {
 								return reply({"success":true,message:"ok"});
+							} else {
+								return reply(content);
+							}
+						} else {
+							return reply({"success":false,message:err});
+						}
+					});
+				});
+			}
+		},
+		//查询维修项目
+		//c查询配件
+		{
+			method: 'POST',
+			path: '/find_repair_items',
+			handler: function(request, reply){
+				console.log(request.payload);
+				var pailiang_type = request.payload.pailiang_type;
+				var store_id = request.payload.store_id;
+				var q = request.payload.info;
+				get_cookie_userid(request, function (user_id){
+					if (!user_id) {
+						return reply.redirect("/login");
+					}
+					search_repair_items(user_id,store_id,pailiang_type,q, function(err, content){
+						if (!err) {
+							console.log("content:"+content);
+							if (content.success) {
+								return reply({"success":true,message:"ok",rows:content.rows});
 							} else {
 								return reply(content);
 							}

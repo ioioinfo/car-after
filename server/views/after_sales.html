@@ -1840,7 +1840,7 @@ function end_query(){
 		border-radius: 5px;
 		margin-right: 13px;
 	}
-	.button3, .button2 {
+	.button3, .button2, .button4, .button5 {
 		width: 70px;
 		height: 25px;
 		border: none;
@@ -2143,15 +2143,16 @@ function end_query(){
 		width:100%;
 	}
 	.head .title{
-		padding:15px;
+		height: 51px;
 		float:left;
-		width: 418px;
+		line-height: 51px;
+		width: 448px;
 		text-align: center;
 		cursor: pointer;
-		border-bottom: 1px solid #fff;
+		border-bottom: 2px solid #fff;
 	}
 	.head .title.on{
-		border-bottom: 1px solid #999;
+		border-bottom: 2px solid #666;
 	}
 	.baoyang_item{
 		float:left;
@@ -2169,18 +2170,9 @@ function end_query(){
 	}
 	.repair_item .foot{
 		height: 30px;
-	}
-	.baoyang_cancel{
 		float: right;
-		width: 158px;
-		margin-right: 5px;
-		height: 25px;
-	}
-	.baoyang_save{
-		float: right;
-		width: 158px;
-		margin-right: 5px;
-		height: 25px;
+		margin-top: -10px;
+		margin-right: 12px;
 	}
 	.repair_cre{
 		width:270px;
@@ -2302,6 +2294,27 @@ function end_query(){
 		height:240px;
 		overflow:auto;
 	}
+	.item .foot .pur_save {
+		width: 70px;
+		height: 25px;
+		border: none;
+		background: #056daa;
+		color: #ffffff;
+		-moz-border-radius: 5px;
+		-webkit-border-radius: 5px;
+		border-radius: 5px;
+		margin-right: 13px;
+	}
+	.item .foot .button5 {
+		width: 70px;
+		height: 25px;
+		border: none;
+		background: #7c7777;
+		color: #ffffff;
+		-moz-border-radius: 5px;
+		-webkit-border-radius: 5px;
+		border-radius: 5px;
+	}
 </style>
 </head>
 <body>
@@ -2314,7 +2327,7 @@ function end_query(){
 				<div class="show child on"></div>
 				<!-- <div class="back child" ></div> -->
 				<div class="add_purch child"></div>
-				<div class="person">欢迎，xxx，登出</div>
+				<div class="person">欢迎， {{employe.name}} !</div>
 				<div class="employee child hide"></div>
 				<div></div>
 			</div>
@@ -2687,9 +2700,9 @@ function end_query(){
 					</div>
 				</div>
 			</div>
-			<div class="foot">
-				<input type="reset" value="取消" class="repair_cancel repair"></input>
-				<input type="submit" value="保存" class="repair_save repair"></input>
+			<div class="foot" style="margin-top:10px;margin-right: 5px;">
+				<input type="reset" value="取消" class="repair_cancel button5"></input>
+				<input type="submit" value="保存" class="repair_save pur_save"></input>
 			</div>
 		</script>
 		<div class="purchase hide">
@@ -2848,10 +2861,9 @@ function end_query(){
 					</div>
 
 					<div class="foot">
-						<input type="reset" value="取消" class="baoyang_cancel"></input>
-						<input type="submit" value="保存" class="baoyang_save"></input>
+						<input type="submit" value="保存" class="baoyang_save pur_save"></input>
+						<input type="reset" value="取消" class="baoyang_cancel button4"></input>
 					</div>
-
 				</div>
 			</div>
 		</div>

@@ -163,8 +163,8 @@ var create_repair_paper = function(data, cb){
  					if (!user_id) {
  						return reply.redirect("/login");
  					}
-					var ep = eventproxy.create("rows", "feedbacks", "vehicles", "purchases", "jixiaos", "employee", function (rows, feedbacks, vehicles, purchases, jixiaos, employee) {
-						return reply.view('after_sales', {"rows":rows,"feedbacks":feedbacks,"vehicles":vehicles,"purchases":purchases,"jixiaos":jixiaos,"employee":employee});
+					var ep = eventproxy.create("rows", "feedbacks", "vehicles", "purchases", "jixiaos", "employe", function (rows, feedbacks, vehicles, purchases, jixiaos, employee) {
+						return reply.view('after_sales', {"rows":rows,"feedbacks":feedbacks,"vehicles":vehicles,"purchases":purchases,"jixiaos":jixiaos,"employe":employee,"employee":JSON.stringify(employee)});
 					});
 					search_list_today(user_id,function(err, content) {
 						var rows = JSON.stringify(content.rows);
@@ -187,8 +187,8 @@ var create_repair_paper = function(data, cb){
 						ep.emit("jixiaos", jixiaos);
 					});
 					find_employee_info(user_id,function(err, content){
-						var employee = JSON.stringify(content.row);
-						ep.emit("employee", employee);
+						var employee = content.row;
+						ep.emit("employe", employee);
 					});
 				});
 			}

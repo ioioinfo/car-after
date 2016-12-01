@@ -42,6 +42,7 @@ $(function() {
 	var content3 = $(".content3");
 	var content4 = $(".content4");
 	var income = 0;
+	var hours = 0;
 	window.search_status = {
 		"time" :0,
 		"running" :false
@@ -83,21 +84,68 @@ $(function() {
 			$(".borderline").removeClass("bord");
 			$(this).addClass("bord");
 		});
+		$("#repair_paper input").change(function(){
+			var id = $(this).attr("id");
+			if ($(this).attr("type") == "checkbox") {
+				repair_tot_items[id] = $(this).is(":checked");
+			} else {
+				repair_tot_items[id] = $(this).val();
+			}
+		});
+		$("#repair_paper textarea").change(function(){
+			var id = $(this).attr("id");
+			repair_tot_items[id] = $(this).val();
+		});
 	};
 	//保存维修委托单
 	var repair_paper_save = function(){
 		content3.addClass("hide");
 		repair_tot_items.contact_name = repair_tot_items.name;
 		repair_tot_items.contact_mobile = repair_tot_items.mobile;
-		repair_tot_items.ev_legend = $("#ev_legend").val();
-		repair_tot_items.legend =$("#legend").val();
 		repair_tot_items.gongshi_feiyong = repair_tot_items.total;
+		repair_tot_items.store_id = employee_info.store_id;
 		repair_tot_items.mendian_name = employee_info.mendian;
-		repair_tot_items.breakdown_desc = $("#breakdown_desc").val();
-		search_result.repairs.unshift(repair_tot_items);
-		var t = _.template($("#customer_info").html());
-		$("#customer").html(t(search_result));
-		repair_tot_items = {"repair_item_infos":[]};
+		//---
+
+		repair_tot_items.plate_numbers = search_result.row.plate_numbers;
+		repair_tot_items.vin_no = search_result.row.vin_no;
+		repair_tot_items.engine = search_result.engine;
+		repair_tot_items.huiyuankafenlei_name = search_result.vip.huiyuankafenlei_name;
+		repair_tot_items.zhuzhanghu_yue = search_result.vip.zhuzhanghu_yue;
+		repair_tot_items.car_id = search_result.row.car_id;
+		repair_tot_items.car_brand = search_result.row.car_brand;
+		repair_tot_items.car_type = search_result.row.car_type;
+		repair_tot_items.car_color = search_result.row.car_color;
+		repair_tot_items.pailiang_type = search_result.row.pailiang_type;
+		repair_tot_items.client_id = search_result.row.id;
+		repair_tot_items.client_name = search_result.row.name;
+		repair_tot_items.client_mobile = search_result.row.mobile;
+		repair_tot_items.projects = repair_tot_items.repair_item_infos;
+
+
+		alert(JSON.stringify(repair_tot_items));
+		// repair_tot_items.repair_store =
+		// repair_tot_items.gongshi_feiyong =
+		// repair_tot_items.cailiao_feiyong =
+		// repair_tot_items.amount =
+		// repair_tot_items.shiji_gongshi_feiyong =
+		// repair_tot_items.shiji_cailiao_feiyong =
+		// repair_tot_items.shiji_amount =
+
+		//search_result.repairs.unshift(repair_tot_items);
+		$.post("/save_repair_paper",{repair_tot_items:JSON.stringify(repair_tot_items)},function(data,status){
+			if(data.success){
+				// var t = _.template($("#customer_info").html());
+				// $("#customer").html(t(search_result));
+				// repair_tot_items = {"repair_item_infos":[]};
+				// console.log(search_result);
+				click_serarch_result(search_result.row.client_id);
+			}else {
+				alert(data.message);
+			}
+		});
+
+
 	};
 	//新增维修项目
 	var repair_add = function(){
@@ -115,13 +163,16 @@ $(function() {
 	//维修工时费计算
 	var work_income = function(){
 		income = 0;
+		hours = 0;
 		if (repair_tot_items.repair_item_infos) {
 			for (var i = 0; i < repair_tot_items.repair_item_infos.length; i++) {
 				income = repair_tot_items.repair_item_infos[i].gongshi_amount + income;
+				hours = repair_tot_items.repair_item_infos[i].gongshi;
 			}
 		}
 		repair_tot_items.income = income;
 		repair_tot_items.total = income;
+		repair_tot_items.gongshi = hours;
 		repair_tot_items.gongshi_zhekou = 1;
 		if (search_result.vip.gongshi_zhekou) {
 			repair_tot_items.gongshi_zhekou = search_result.vip.gongshi_zhekou;
@@ -248,6 +299,7 @@ $(function() {
 				var item = {};
 				if (items[i].id == id) {
 					item = items[i];
+					item.repair_project_name = item.name;
 					repair_item_infos.unshift(item);
 					break;
 				}
@@ -572,7 +624,6 @@ $(function() {
 		results.addClass("hide");
 		search_go();
 	});
-
 	//今天查询添加
 	var add_today_info = function(today_info){
 		var exists = false;
@@ -589,7 +640,6 @@ $(function() {
 		}
 		$('.cursor[data-id='+today_info.client_id+']').addClass("bord");
 	};
-
 	//搜索执行
 	var search_go = function(){
 		var info = encodeURI($("#txt").val());
@@ -799,7 +849,6 @@ $(function() {
 		click_serarch_result(client_id);
 	});
 });
-
 function no_data(){
 	var none_search = $(".none_search");
 	none_search.fadeOut(2000);
@@ -1911,14 +1960,6 @@ function end_query(){
 	.menu .item_time:last-child{
 		margin-bottom: 15px;
 	}
-	#remark{
-		width: 98%;
-		margin-left: 3px;
-	}
-	/*#pur_remark{
-		width: 477px;
-		margin-right: 19px;
-	}*/
 	.lianjie{
 		color: #459ae9;
 		cursor: pointer;
@@ -2443,14 +2484,12 @@ function end_query(){
 				<div class="item"><span>状态：</span><input value="正常" readonly></input></div>
 				<div class="item"><span>余额：</span><input id="vip_zhuzhanghu_yue" value="<%- vip.zhuzhanghu_yue %>" readonly></input></div>
 			</div>
-			<% if (row.weixiu_tishi) { %>
 			<div class="section_last">
 				<div class="title">系统提醒</div>
 
 				<!-- <div class="worn"><span>零件提醒：</span><span></span></div> -->
 				<div class="worn"><span>系统提醒：</span><span><%- row.weixiu_tishi %></span></div>
 			</div>
-			<% } %>
 			<% if (purchase_infos.length > 0 ) { %>
 			<div class="section_last">
 				<div class="title">采购信息</div>
@@ -2524,7 +2563,7 @@ function end_query(){
 							<span>送修人：</span><input id="repair_client_name" value="<%- repair_tot_items.name %>"></input>
 						</div>
 						<div class="hehind">
-							<span>进厂里程：</span><input id="legend"></input>
+							<span>进厂里程：</span><input id="legend" value="<%- repair_tot_items.legend %>"></input>
 						</div>
 					</div>
 					<div class="line">
@@ -2532,32 +2571,33 @@ function end_query(){
 							<span>送修电话：</span><input id="repair_phone_number" value="<%- repair_tot_items.mobile %>"></input>
 						</div>
 						<div class="hehind">
-							<span>ev里程：</span><input id="ev_legend"></input>
+							<span>ev里程：</span><input id="ev_legend" value="<%- repair_tot_items.ev_legend %>"></input>
 						</div>
 					</div>
 					<div class="line">
 						<div class="one">
-							<span>报案号：</span><input></input>
+							<span>报案号：</span><input id="baoan_code" value="<%- repair_tot_items.baoan_code %>"></input>
 						</div>
 					</div>
 					<div class="line2">
 						<div class="two">
-							<span>接车备注：</span><textarea cols="40" rows="2" style="resize: none;"></textarea>
+							<span>接车备注：</span>
+							<textarea cols="40" rows="2" style="resize: none;" id="remark"><%- repair_tot_items.remark %></textarea>
 						</div>
 					</div>
 				</div>
 				<div class="right">
 					<div class="line">
 						<div class="font">
-							<span>三天回访：</span><input></input>
+							<span>三天回访：</span><input type="checkbox" id="if_huifang" <% if(repair_tot_items.if_huifang) {%> checked="true"<% } %>></input>
 						</div>
 						<div class="hehind">
-							<span>是否洗车：</span><input></input>
+							<span>是否洗车：</span><input type="checkbox" id="if_xiche" <% if(repair_tot_items.if_xiche) {%> checked="true"<% } %>></input>
 						</div>
 					</div>
 					<div class="line">
 						<div class="one">
-							<span>系统提醒：</span><input></input>
+							<span>系统提醒：</span><input id="weixiu_tishi" value="<%- repair_tot_items.weixiu_tishi %>"></input>
 						</div>
 					</div>
 					<div class="line">
@@ -2567,7 +2607,7 @@ function end_query(){
 					</div>
 					<div class="line2">
 						<div class="two">
-							<span>故障描述：</span><textarea cols="40" rows="2" style="resize: none;" id="breakdown_desc"></textarea>
+							<span>故障描述：</span><textarea cols="40" rows="2" style="resize: none;" id="breakdown_desc"><%- repair_tot_items.breakdown_desc %></textarea>
 						</div>
 					</div>
 				</div>
@@ -2660,7 +2700,6 @@ function end_query(){
 						<div class="item"><span>客户手机：</span><input id="pur_phone_number" readOnly></input></div>
 						<div class="item"><span>客户车牌：</span><input id="pur_plate_numbers" readOnly></input></div>
 						<div class="item"><span>客户车型：</span><input id="pur_type" readOnly></input></div>
-						<!-- <div class="item" id="remark"><span>备注信息：</span><input id="pur_remark"></input></div> -->
 					</div>
 
 					<div style="float:right;margin-right:29px;margin-top: 12px;">

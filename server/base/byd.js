@@ -140,8 +140,12 @@ var update_phone_number = function(data, cb){
 	var url = "http://211.149.245.32:8787/after/update_repair_client_mobile";
 	do_post_method(url,data,cb);
 };
-
-    server.route([
+//创建维修单
+var create_repair_paper = function(data, cb){
+	var url = "http://211.149.245.32:8787/after/save_repair_order";
+	do_post_method(url,data,cb);
+};
+	server.route([
 		//用户登入
 		{
 			method: 'GET',
@@ -492,7 +496,7 @@ var update_phone_number = function(data, cb){
 			}
 		},
 		//查询维修项目
-		//c查询配件
+		//查询配件
 		{
 			method: 'POST',
 			path: '/find_repair_items',
@@ -520,7 +524,33 @@ var update_phone_number = function(data, cb){
 				});
 			}
 		},
+		//维修委托单保存
+		{
+			method: 'POST',
+			path: '/save_repair_paper',
+			handler: function(request, reply){
+				var repair_order = JSON.parse(request.payload.repair_tot_items);
 
+				get_cookie_userid(request, function (user_id){
+					if (!user_id) {
+						return reply.redirect("/login");
+					}
+					repair_order.user_id = user_id;
+					create_repair_paper({"repair_order":JSON.stringify(repair_order)}, function(err, content){
+						if (!err) {
+							console.log("content:"+content);
+							if (content.success) {
+								return reply({"success":true,message:"ok"});
+							} else {
+								return reply(content);
+							}
+						} else {
+							return reply({"success":false,message:err});
+						}
+					});
+				});
+			}
+		},
     ]);
 
     next();

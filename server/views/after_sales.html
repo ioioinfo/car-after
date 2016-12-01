@@ -6,7 +6,6 @@
 <title>BYD售后服务</title>
 <script src="http://libs.baidu.com/jquery/2.0.3/jquery.min.js" type="text/javascript"></script>
 <script src="js/lodash.min.js" type="text/javascript"></script>
-<script src="js/jquery.page.js" type="text/javascript"></script>
 <script src="css/reset.css" type="text/css"></script>
 <script>
 $(function() {
@@ -84,6 +83,7 @@ $(function() {
 			$(".borderline").removeClass("bord");
 			$(this).addClass("bord");
 		});
+		//input框改变，内容存入维修单变量中
 		$("#repair_paper input").change(function(){
 			var id = $(this).attr("id");
 			if ($(this).attr("type") == "checkbox") {
@@ -95,6 +95,21 @@ $(function() {
 		$("#repair_paper textarea").change(function(){
 			var id = $(this).attr("id");
 			repair_tot_items[id] = $(this).val();
+		});
+		$(".type_change").click(function(){
+			$(this).children(".hello").removeClass("hide");
+			var id = $(this).data("id");
+			var type = $(this).children(".hello").val();
+			if (type) {
+				for (var i = 0; i < repair_tot_items.repair_item_infos.length; i++) {
+					if (id == repair_tot_items.repair_item_infos[i].id) {
+						repair_tot_items.repair_item_infos[i].type = type;
+						break;
+					}
+				}
+				repair_paper();
+			}
+			// $(this).children(".hello").addClass("hide");
 		});
 	};
 	//保存维修委托单
@@ -122,8 +137,6 @@ $(function() {
 		repair_tot_items.client_mobile = search_result.row.mobile;
 		repair_tot_items.projects = repair_tot_items.repair_item_infos;
 
-
-		alert(JSON.stringify(repair_tot_items));
 		// repair_tot_items.repair_store =
 		// repair_tot_items.gongshi_feiyong =
 		// repair_tot_items.cailiao_feiyong =
@@ -137,9 +150,10 @@ $(function() {
 			if(data.success){
 				// var t = _.template($("#customer_info").html());
 				// $("#customer").html(t(search_result));
-				// repair_tot_items = {"repair_item_infos":[]};
 				// console.log(search_result);
 				click_serarch_result(search_result.row.client_id);
+				end_query();
+				repair_tot_items = {"repair_item_infos":[]};
 			}else {
 				alert(data.message);
 			}
@@ -2285,13 +2299,6 @@ function end_query(){
 	.borderline:first-child {
 		border-top: none;
 	}
-	a{ text-decoration:none;}
-	a:hover{ text-decoration:none;}
-	.tcdPageCode{padding: 7px 20px;text-align: left;color: #ccc;text-align:center;}
-	.tcdPageCode a{display: inline-block;color: #428bca;display: inline-block;height: 25px;	line-height: 25px;	padding: 0 10px;border: 1px solid #ddd;	margin: 0 2px;border-radius: 4px;vertical-align: middle;}
-	.tcdPageCode a:hover{text-decoration: none;border: 1px solid #428bca;}
-	.tcdPageCode span.current{display: inline-block;height: 25px;line-height: 25px;padding: 0 10px;margin: 0 2px;color: #fff;background-color: #428bca;	border: 1px solid #428bca;border-radius: 4px;vertical-align: middle;}
-	.tcdPageCode span.disabled{	display: inline-block;height: 25px;line-height: 25px;padding: 0 10px;margin: 0 2px;	color: #bfbfbf;background: #f2f2f2;border: 1px solid #bfbfbf;border-radius: 4px;vertical-align: middle;}
 	.repair_cre_detail.bord{
 		color:white;
 	}
@@ -2668,7 +2675,16 @@ function end_query(){
 										<div class="item_hour">&nbsp;&nbsp;<%- repair_item_info.gongshi %></div>
 										<div class="item_per_price">&nbsp;&nbsp;<%- repair_item_info.gongshi_price %></div>
 										<div class="item_tot_price">&nbsp;&nbsp;<%- repair_item_info.gongshi_amount %></div>
-										<div class="item_type">&nbsp;&nbsp;<%- repair_item_info.type %></div>
+										<div class="item_type type_change" id="type" data-id="<%- repair_item_info.id %>">&nbsp;&nbsp;<%- repair_item_info.type %>
+											<select class="hide hello">
+												<option value="" disabled selected></option>
+												<option value="一般维修">一般维修</option>
+												<option value="定期保养">定期保养</option>
+												<option value="厂家配件三包">厂家配件三包</option>
+												<option value="首保">首保</option>
+												<option value="供应商三包">供应商三包</option>
+											</select>
+										</div>
 										<div style="clear:both;"></div>
 									</div>
 									<% }); %>
@@ -2835,7 +2851,6 @@ function end_query(){
 
 								</div>
 							</div>
-							<div class="tcdPageCode"></div>
 						</div>
 					</div>
 

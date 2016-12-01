@@ -46,13 +46,6 @@ $(function() {
 		"time" :0,
 		"running" :false
 	};
-	//分页样式
-	$(".tcdPageCode").createPage({
-		pageCount:20,
-		current:1,
-		backFn:function(p){
-		}
-	});
 	//维修委托单
 	var repair_paper = function(){
 		var t = _.template($("#repair_paper_infos").html());

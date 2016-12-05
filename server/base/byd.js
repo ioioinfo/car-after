@@ -468,7 +468,7 @@ var create_repair_paper = function(data, cb){
 				});
 			}
 		},
-		//c查询配件
+		//采购c查询配件
 		{
 			method: 'POST',
 			path: '/search_peijian',
@@ -482,9 +482,10 @@ var create_repair_paper = function(data, cb){
 					}
 					search_peijian_infos(user_id,code,car_type, function(err, content){
 						if (!err) {
-							console.log("content:"+content);
+							var peijian = content.rows;
+							console.log(peijian);
 							if (content.success) {
-								return reply({"success":true,message:"ok"});
+								return reply({"success":true,message:"ok",peijian:peijian});
 							} else {
 								return reply(content);
 							}

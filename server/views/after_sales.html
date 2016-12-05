@@ -46,10 +46,20 @@ $(function() {
 		"time" :0,
 		"running" :false
 	};
+	//点击登出事件
+	$(".logout").click(function(){
+		location.href ="/login";
+	});
+	//当维修单有数据时候，刷新页面提醒
+	$(window).bind('beforeunload',function(){
+		if (repair_tot_items.name) {
+			return '您输入的内容尚未保存，确定离开此页面吗？';
+		}
+	});
 	//维修委托单
 	var repair_paper = function(){
 		var t = _.template($("#repair_paper_infos").html());
-		$("#repair_paper").html(t({repair_tot_items:repair_tot_items}));
+		$("#repair_paper").html(t({repair_tot_items:repair_tot_items,search_result:search_result}));
 		//取消按钮
 		$(".repair_cancel").click(function(){
 			content3.addClass("hide");
@@ -139,6 +149,13 @@ $(function() {
 		// repair_tot_items.shiji_amount =
 
 		//search_result.repairs.unshift(repair_tot_items);
+		if (search_result.repairs) {
+			if (!search_result.repairs[0].shoukuan_date) {
+				alert("上个维修单还未结束！");
+				return;
+			}
+		}
+
 		$.post("/save_repair_paper",{repair_tot_items:JSON.stringify(repair_tot_items)},function(data,status){
 			if(data.success){
 				// var t = _.template($("#customer_info").html());
@@ -394,7 +411,7 @@ $(function() {
 				$("#vip_shenfenzhenghaoma").attr("value",member_info.shenfenzhenghaoma);
 				$("#vip_ka_bianhao").attr("value",member_info.ka_bianhao);
 				$("#vip_zhuzhanghu_yue").attr("value",member_info.zhuzhanghu_yue);
-
+				search_result.vip = member_info;
 			}else {
 
 			}
@@ -460,6 +477,8 @@ $(function() {
 		$("#peijian_num").val("");
 		$("#peijian_date").val("");
 		$("#pur_remark").val("");
+		$("#add_peijian").html("");
+		$("#add_peijian").addClass("hide");
 	});
 	button2.click(function(){
 		vehicle_customer.addClass("hide");
@@ -553,7 +572,6 @@ $(function() {
 	$("#peijian_id").change(function(){
 		var code = $("#peijian_id").val();
 		if (code) {
-			alert("123");
 			search_peijian(code);
 		}
 	});
@@ -561,7 +579,31 @@ $(function() {
 		var car_type = encodeURI(search_result.row.car_type);
 		$.post("/search_peijian",{code:code,car_type:car_type},function(data,status){
 			if (data.success) {
-				alert("success!");
+				if (data.peijian.length > 0) {
+					for (var i = 0; i < data.peijian.length; i++) {
+						console.log(data.peijian[i].name);
+						$("#add_peijian").append("<div class='peijian_name2' data-code =' "+data.peijian[i].code+" ' data-price =' "+data.peijian[i].xiaoshou_price+" ' data-name ='"+data.peijian[i].name+" ' data-id = '"+data.peijian[i].id+"'>"+data.peijian[i].code+"</div>");
+					}
+					$("#add_peijian").removeClass("hide");
+					$(".peijian_name2").click(function(){
+						var code = $(this).data("code");
+						var name = $(this).data("name");
+						var price = $(this).data("price");
+						var id = $(this).data("id");
+						$("#peijian_id2").val(id);
+						$("#peijian_num").val("1");
+						$("#peijian_name").val(name);
+						$("#peijian_price").val(price);
+						$("#peijian_id").val(code);
+						$("#add_peijian").addClass("hide");
+						$("#peijian_num").change(function(){
+							var num = $(this).val();
+							$("#peijian_price").val(price*num);
+						});
+					});
+				}
+			}else {
+				alert(data.message);
 			}
 		});
 	};
@@ -624,6 +666,10 @@ $(function() {
 				if (key == 13) {
 					check_member_info();
 				}
+			});
+			//系统提醒编译保存
+			$("#remind").change(function(){
+				alert("系统提醒已保存。");
 			});
 		});
 	};
@@ -690,13 +736,16 @@ $(function() {
 						$("#check_member").click(function(){
 							check_member_info();
 						});
-
 						//维修委托单创建
 						$(".create").click(
 							 function () {
 								 $(".content3").removeClass("hide");
 							 }
 						);
+						//系统提醒编译保存
+						$("#remind").change(function(){
+							alert("系统提醒已保存。");
+						});
 					}
 					else if (num == 3) {
 						//查询出多条记录，到一个数据列表
@@ -731,7 +780,7 @@ $(function() {
 	//创建客户采购单
 	var create_purchase = $(".pur_save.two");
 	create_purchase.click(function(){
-		var peijian_id = $("#peijian_id").val();
+		var peijian_id = $("#peijian_id2").val();
 		var peijian_name = $("#peijian_name").val();
 		var peijian_num = $("#peijian_num").val();
 		var peijian_date = $("#peijian_date").val();
@@ -934,11 +983,6 @@ function end_query(){
 		width: 100%;
 		min-width: 1100px;
 		margin: 60px auto 0;
-		/*background: #fff;*/
-		/*background-size: cover;
-		overflow: hidden;
-		background-position: center center;
-		background-image: url(images/white.png);*/
 	}
 	.content{
 		width: 800px;
@@ -1071,20 +1115,6 @@ function end_query(){
 	.show.on{
 		background-position: -40px 0;
 	}
-	/*.back{
-		height: 40px;
-		width: 40px;
-		background-position: -320px 0;
-		background-image: url(images/icons.png);
-		background-size: auto 40px;
-		background-repeat:no-repeat;
-		position: absolute;
-		margin-top: 50px;
-		cursor: pointer;
-	}
-	.back.on{
-		background-position: -400px 0;
-	}*/
 	.add_purch{
 		top:5px;
 		height: 40px;
@@ -1094,17 +1124,17 @@ function end_query(){
 		background-size: auto 40px;
 		background-repeat:no-repeat;
 		position: absolute;
-		margin-left: 50px;
+		margin-left: 45px;
 		cursor:  not-allowed;
 	}
 	.person{
 		top:10px;
 		height: 40px;
-		width: 120px;
+		width: 135px;
 		line-height: 40px;
 		font-size: 12px;
 		position: absolute;
-		margin-left: 120px;
+		margin-left: 93px;
 		cursor: pointer;
 	}
 	/*.employee{
@@ -1330,8 +1360,8 @@ function end_query(){
 	}
 	.worn{
 		width:99%;
-		height:32px;
-		background: #F7F7F7;
+		/*height:32px;*/
+		/*background: #F7F7F7;*/
 		margin: 5px;
 		line-height: 32px;
 		float: left;
@@ -2315,6 +2345,19 @@ function end_query(){
 		-webkit-border-radius: 5px;
 		border-radius: 5px;
 	}
+	#add_peijian{
+		position: absolute;
+	    background: #fff;
+	    top: 24px;
+	    width: 165px;
+	    text-align: left;
+	    font-size: 12px;
+	    left: 133px;
+	    cursor: pointer;
+		overflow: auto;
+		height: 195px;
+	}
+
 </style>
 </head>
 <body>
@@ -2327,7 +2370,8 @@ function end_query(){
 				<div class="show child on"></div>
 				<!-- <div class="back child" ></div> -->
 				<div class="add_purch child"></div>
-				<div class="person">欢迎， {{employe.name}} !</div>
+				<div class="person">欢迎，{{employe.name}},  <span class="logout" style="color:#ff0000;font-weight:600;">登出!</sapn></div>
+				<div></div>
 				<div class="employee child hide"></div>
 				<div></div>
 			</div>
@@ -2501,7 +2545,9 @@ function end_query(){
 				<div class="title">系统提醒</div>
 
 				<!-- <div class="worn"><span>零件提醒：</span><span></span></div> -->
-				<div class="worn"><span>系统提醒：</span><span><%- row.weixiu_tishi %></span></div>
+				<div class="worn">
+					<p class="p4">系统提醒：</p><textarea id="remind" class="p3" style="color:#ff0000;font-weight:600;resize:none;border:0px solid;" contentEditable ><%- row.weixiu_tishi %></textarea>
+				</div>
 			</div>
 			<% if (purchase_infos.length > 0 ) { %>
 			<div class="section_last">
@@ -2629,7 +2675,7 @@ function end_query(){
 						<span>工时费：<%- repair_tot_items.income || 0 %>元</span>
 					</div>
 					<div class="columnlist">
-						<span>折扣：<%- repair_tot_items.gongshi_zhekou*100 || 100 %>%</span>
+						<span>折扣：<%- search_result.vip.gongshi_zhekou*100 || 100 %>%</span>
 					</div>
 					<div class="columnlist">
 						<span>总计：<%- repair_tot_items.total || 0 %>元</span>
@@ -2711,11 +2757,17 @@ function end_query(){
 				<div class="pur_item">
 					<div class="pur_item_title" style="">配件采购单</div>
 					<div class="section">
-						<div class="item"><span>配件编号：</span><input id="peijian_id"></input></div>
-						<div class="item"><span>配件名称：</span><input id="peijian_name"></input></div>
+						<div class="item" style="position:relative;">
+							<span>配件编号：</span>
+							<input id="peijian_id"></input>
+							<input id="peijian_id2" class="hide"></input>
+							<div id="add_peijian" class="hide">
+							</div>
+						</div>
+						<div class="item"><span>配件名称：</span><input id="peijian_name" readOnly></input></div>
 						<div class="item"><span>承诺日期：</span><input type="date" style="height:16px;font-size: 12px;" id="peijian_date"></input></div>
 						<div class="item"><span>配件数量：</span><input id="peijian_num"></input></div>
-						<div class="item"><span>销售价格：</span><input id="peijian_price"></input></div>
+						<div class="item"><span>销售价格：</span><input id="peijian_price" readOnly></input></div>
 						<div class="item"><span>备注信息：</span><input id="pur_remark"></input></div>
 
 						<div class="item"><span>客户姓名：</span><input id="pur_client_name" readOnly></input></div>
@@ -2911,7 +2963,7 @@ function end_query(){
 	<p class="p1">
 		<span class="span1">客服电话：021-60489399</span>
 		<span class="span2">客服手机：15868881999</span>
-		<span class="span3">客服邮箱：haimingluo@ioioinfo.com</span>
+		<span class="span3">客服邮箱：service@ioioinfo.com</span>
 	</p>
 </body>
 </html>

@@ -145,6 +145,11 @@ var create_repair_paper = function(data, cb){
 	var url = "http://211.149.245.32:8787/after/save_repair_order";
 	do_post_method(url,data,cb);
 };
+//修改系统提醒
+var remind_save = function(data, cb){
+	var url = "http://211.149.245.32:8787/after/update_repair_car_tixing";
+	do_post_method(url,data,cb);
+};
 	server.route([
 		//用户登入
 		{
@@ -552,7 +557,39 @@ var create_repair_paper = function(data, cb){
 				});
 			}
 		},
-    ]);
+		//修改系统提醒
+		{
+			method: 'POST',
+			path: '/remind_update',
+			handler: function(request, reply){
+				var info ={
+					"client_id" : request.payload.client_id,
+					"weixiu_tishi" : request.payload.info,
+					"car_id" : request.payload.car_id
+				};
+				get_cookie_userid(request, function (user_id){
+					if (!user_id) {
+						return reply.redirect("/login");
+					}
+					info.user_id = user_id;
+					console.log(info);
+					remind_save(info, function(err, content){
+						if (!err) {
+							console.log("content:"+content);
+							if (content.success) {
+								return reply({"success":true,message:"ok"});
+							} else {
+								return reply(content);
+							}
+						} else {
+							return reply({"success":false,message:err});
+						}
+					});
+				});
+			}
+		},
+
+	]);
 
     next();
 };

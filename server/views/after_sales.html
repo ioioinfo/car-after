@@ -113,13 +113,15 @@ $(function() {
 			repair_tot_items[id] = $(this).val();
 		});
 		$(".type_change").click(function(){
-			$(this).children(".hello").removeClass("hide");
+			$(".hello").addClass("hide");
+			$(this).children(".hello").show();
+			$(this).children("span").hide();
 			var id = $(this).data("id");
 			var type = $(this).children(".hello").val();
 			if (type) {
 				for (var i = 0; i < repair_tot_items.projects.length; i++) {
 					if (id == repair_tot_items.projects[i].id) {
-						repair_tot_items.projects[i].type = type;
+						repair_tot_items.projects[i].repair_store_name = type;
 						break;
 					}
 				}
@@ -333,7 +335,7 @@ $(function() {
 	var change_repair_type = function(){
 		var type = $("#change_type").val();
 		for (var i = 0; i < repair_tot_items.projects.length; i++) {
-			repair_tot_items.projects[i].type = type;
+			repair_tot_items.projects[i].repair_store_name = type;
 		}
 		repair_paper();
 	};
@@ -1073,6 +1075,9 @@ function end_query(){
 		height: 16px;
 		font-size: 14px;
 		margin-top: 15px;
+	}
+	.item3:hover{
+		background-color: #f0f0f0;
 	}
 	.item3 .item4{
 		margin: 0 12px 6px 15px;
@@ -1866,7 +1871,7 @@ function end_query(){
 	}
 	#phone_number{
 		width:91px;
-		margin-left:45px;
+		margin-left:48px;
 		float:left;
 		margin-right:2px;
 		border-style: ridge;
@@ -1875,7 +1880,7 @@ function end_query(){
 	}
 	#huiyuan_number{
 		width:124px;
-		margin-left:21px;
+		margin-left:24px;
 		float:left;
 		margin-right:2px;
 		background-color: #dedede;
@@ -2702,8 +2707,8 @@ function end_query(){
 										<div class="item_hour">&nbsp;&nbsp;<%- repair_item_info.gongshi %></div>
 										<div class="item_per_price">&nbsp;&nbsp;<%- repair_item_info.gongshi_price %></div>
 										<div class="item_tot_price">&nbsp;&nbsp;<%- repair_item_info.gongshi_fei %></div>
-										<div class="item_type type_change" id="repair_store_name" data-id="<%- repair_item_info.id %>">&nbsp;&nbsp;<%- repair_item_info.repair_store_name %>
-											<select class="hide hello">
+										<div class="item_type type_change" id="repair_store_name" data-id="<%- repair_item_info.id %>"><span><%- repair_item_info.repair_store_name %></span>
+											<select class="hide hello" >
 												<option value="" disabled selected></option>
 												<option value="一般维修">一般维修</option>
 												<option value="定期保养">定期保养</option>

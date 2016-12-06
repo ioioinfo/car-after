@@ -266,7 +266,6 @@ $(function() {
 		});
 		//保存按钮，复制到维修单，维修项目数组里
 		$(".baoyang_save").click(function(){
-			// repair_tot_items = {"projects":projects};
 			repair_tot_items.projects = projects;
 			content3.removeClass("hide");
 			content4.addClass("hide");
@@ -654,7 +653,7 @@ $(function() {
 					repair_paper();
 				 }
 			);
-			$("#repair_update").click(function(){
+			$(".repair_update").click(function(){
 				var id = $(this).data("id");
 				$(".content3").removeClass("hide");
 				for (var i = 0; i < search_result.repairs.length; i++) {
@@ -1047,7 +1046,6 @@ function end_query(){
 		float: left;
 		font-size: 14px;
 		margin-top: 15px;
-
 	}
 	.menu .list2 .item{
 		width: 48.5%;
@@ -2572,8 +2570,7 @@ function end_query(){
 							</span>
 							<span style="margin-left:45px;">进厂时间：<%- repair.jinchang_time %></span>
 							<% if (repair.shoukuan_date) { %><span style="margin-left:47px;">收款时间：<%- repair.shoukuan_date %></span><% } else{ %>
-							<span id="repair_update" data-id="<%- repair.id %>" style="float:right;margin-right:6px;cursor: pointer;">修改</span><% } %>
-
+							<span class="repair_update" data-id="<%- repair.id %>" style="float:right;margin-right:6px;cursor: pointer;">修改</span><% } %>
 						</div>
 						<div class="item"><span>送修人：</span><input value="<%- repair.contact_name %>"  readonly></input></div>
 						<div class="item"><span>手机号：</span><input value="<%- repair.contact_mobile %>"  readonly></input></div>

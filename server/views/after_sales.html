@@ -57,11 +57,9 @@ $(function() {
 		var car_id =search_result.row.car_id;
 		$.post("/remind_update",{info:info,client_id:client_id,car_id:car_id},function(data,status){
 			if (data.success) {
-				none_search2.fadeIn("fast");
-				$("#ad_info").html("系统提醒修改成功！");
-				setTimeout("large_data()",3000);
+				message_box("系统提醒修改成功！",3000);
 			}else {
-				alert(data.message);
+				message_box(data.message,3000);
 			}
 		});
 	};
@@ -135,7 +133,6 @@ $(function() {
 		content3.addClass("hide");
 		repair_tot_items.store_id = employee_info.store_id;
 		repair_tot_items.mendian_name = employee_info.mendian;
-		//---
 
 		repair_tot_items.plate_numbers = search_result.row.plate_numbers;
 		repair_tot_items.vin_no = search_result.row.vin_no;
@@ -151,34 +148,14 @@ $(function() {
 		repair_tot_items.client_name = search_result.row.name;
 		repair_tot_items.client_mobile = search_result.row.mobile;
 
-		// repair_tot_items.repair_store =
-		// repair_tot_items.gongshi_feiyong =
-		// repair_tot_items.cailiao_feiyong =
-		// repair_tot_items.amount =
-		// repair_tot_items.shiji_gongshi_feiyong =
-		// repair_tot_items.shiji_cailiao_feiyong =
-		// repair_tot_items.shiji_amount =
-
-		//search_result.repairs.unshift(repair_tot_items);
-		if (search_result.repairs.length > 0) {
-			if (!search_result.repairs[0].shoukuan_date) {
-				none_search2.fadeIn("fast");
-				$("#ad_info").html("上个维修委托单未结束！");
-				setTimeout("large_data()",3000);
-				return;
-			}
-		}
-
 		$.post("/save_repair_paper",{repair_tot_items:JSON.stringify(repair_tot_items)},function(data,status){
 			if(data.success){
 				click_serarch_result(search_result.row.client_id);
 				end_query();
 				repair_tot_items = {"projects":[]};
-				none_search2.fadeIn("fast");
-				$("#ad_info").html("已成功创建维修委托单！");
-				setTimeout("large_data()",3000);
+				message_box("已成功创建维修委托单！",3000);
 			}else {
-				alert(data.message);
+				message_box(data.message,3000);
 			}
 		});
 
@@ -189,7 +166,7 @@ $(function() {
 		$(".borderline").removeClass("bord");
 		content3.addClass("hide");
 		content4.removeClass("hide");
-		window.projects = repair_tot_items.projects;
+		window.projects = _.cloneDeep(repair_tot_items.projects);
 		selected_items_model();
 	};
 	var repair_baoyang = function(){
@@ -258,7 +235,7 @@ $(function() {
 						repair_items_model(data.rows);
 					}
 				}else {
-					alert(data.message);
+					message_box(data.message,3000);
 				}
 			});
 		}
@@ -298,7 +275,7 @@ $(function() {
 	//双击移除左边
 	var selected_remove =function(id){
 		for (var i = 0; i < projects.length; i++) {
-			if (projects[i].id == id) {
+			if (projects[i].repair_project_id == id) {
 				projects.splice(i,1);
 				break;
 			}
@@ -325,8 +302,9 @@ $(function() {
 		var exists = false;
 		if (projects) {
 			for (var i = 0; i < projects.length; i++) {
-				if (projects[i].id == id) {
+				if (projects[i].repair_project_id == id) {
 					exists = true;
+					message_box("维修项目已存在！",2000);
 					break;
 				}
 			}
@@ -334,9 +312,8 @@ $(function() {
 		if (!exists) {
 			for (var i = 0; i < items.length; i++) {
 				var item = {};
-				if (items[i].id == id) {
+				if (items[i].repair_project_id == id) {
 					item = items[i];
-					item.repair_project_name = item.name;
 					projects.unshift(item);
 					break;
 				}
@@ -364,7 +341,7 @@ $(function() {
 	var repair_item_delete = function(){
 		var id = $(".borderline.bord").data("id");
 		for (var i = 0; i < repair_tot_items.projects.length; i++) {
-			if (repair_tot_items.projects[i].id == id) {
+			if (repair_tot_items.projects[i].repair_project_id == id) {
 				repair_tot_items.projects.splice(i,1);
 				work_income();
 				repair_paper();
@@ -444,8 +421,8 @@ $(function() {
 	refresh_today_search();
 	//首页绩效
 	var jixiao_list = function(){
-		var company_kpi = {"amount": 0,"customer_cnt": 0, "project_cnt": 0};
-		var user_kpi = {"amount": 0,"customer_cnt": 0, "project_cnt": 0};
+		var company_kpi = {"amount": 0,"customer_cnt": 0, "project_cnt": 0, "guanhuai_cnt":0};
+		var user_kpi = {"amount": 0,"customer_cnt": 0, "project_cnt": 0, "guanhuai_cnt":0};
 		if (jixiaos.company_kpi) {
 			company_kpi = jixiaos.company_kpi;
 		}
@@ -616,7 +593,7 @@ $(function() {
 					});
 				}
 			}else {
-				alert(data.message);
+				message_box(data.message,3000);
 			}
 		});
 	};
@@ -656,13 +633,19 @@ $(function() {
 				}
 				$.post("/save_phone_number",{"client_id":client_id,"phone_number":phone_number},function(data,status){
 					if (!data.success) {
-						alert(data.message);
+						message_box(data.message,3000);
 						return;
 					}
 				});
 			});
 			$(".create").click(
 				 function () {
+					 if (search_result.repairs.length > 0) {
+						 if (!search_result.repairs[0].shoukuan_date) {
+							 message_box("上个维修委托单未结束！",3000);
+							 return;
+						 }
+					 }
 					 $(".content3").removeClass("hide");
 					repair_tot_items.contact_name = search_result.row.name;
 					repair_tot_items.contact_mobile = search_result.row.mobile;
@@ -674,7 +657,7 @@ $(function() {
 				$(".content3").removeClass("hide");
 				for (var i = 0; i < search_result.repairs.length; i++) {
 					if (search_result.repairs[i].id == id) {
-						repair_tot_items = search_result.repairs[i];
+						repair_tot_items = _.cloneDeep(search_result.repairs[i]);
 					}
 				}
 				repair_paper();
@@ -732,9 +715,7 @@ $(function() {
 						setTimeout("no_data()",10000);
 					}else if (num == 1) {
 						//大量数据的时候提醒
-						none_search2.fadeIn("fast");
-						$("#ad_info").html("搜索匹配数据过多，请多输入几位！");
-						setTimeout("large_data()",3000);
+						message_box("搜索匹配数据过多，请多输入几位！",3000);
 					}
 					else if (num == 2) {
 						//查询出1条数据，直接显示客户信息
@@ -794,7 +775,7 @@ $(function() {
 
 					}
 				}else {
-					alert(data.message);
+					message_box(data.message,3000);
 				}
 			 });
 		}
@@ -811,7 +792,7 @@ $(function() {
 		$.post("/create_purchase_info", {"search_result":search_result, "peijian_id":peijian_id, "peijian_name":peijian_name,
 		"peijian_date":peijian_date, "pur_remark":pur_remark,"peijian_num":peijian_num, "client_id":client_id}, function(data,status){
 			if (!data.success) {
-				alert(data.message);
+				message_box(data.message,3000);
 				return;
 			}
 			purchase.addClass("hide");
@@ -820,9 +801,7 @@ $(function() {
 			$("#peijian_num").val("");
 			$("#peijian_date").val("");
 			$("#pur_remark").val("");
-			none_search2.fadeIn("fast");
-			$("#ad_info").html("已成功创建采购申请单！");
-			setTimeout("large_data()",3000);
+			message_box("已成功创建采购申请单！",3000);
 		});
 
 	});
@@ -832,27 +811,27 @@ $(function() {
 		var vehic_plate_number = $("#vehic_plate_number").val();
 		var vehic_brand = $("#vehic_brand").val();
 		if (vehic_brand == "") {
-			alert("检查车品牌"+vehic_brand);
+			message_box("检查车品牌"+vehic_brand,3000);
 			return false;
 		}
 		var vehic_type = $("#vehic_type").val();
 		if (vehic_type == "") {
-			alert("检查车类型");
+			message_box("检查车类型",3000);
 			return false;
 		}
 		var vehic_pailiang_type = $("#vehic_pailiang_type").val();
 		if (vehic_pailiang_type == "") {
-			alert("检查车排量");
+			message_box("检查车排量",3000);
 			return false;
 		}
 		var vehic_color = $("#vehic_color").val();
 		if (vehic_color == "") {
-			alert("检查车颜色");
+			message_box("检查车颜色",3000);
 			return false;
 		}
 		var vehic_vin = $("#vehic_vin").val();
 		if (vehic_vin == "") {
-			alert("检查车VIN");
+			message_box("检查车VIN",3000);
 			return false;
 		}
 		var vehic_engine = $("#vehic_engine").val();
@@ -864,17 +843,17 @@ $(function() {
 		var custo_code = $("#custo_code").val();
 		var custo_name = $("#custo_name").val();
 		if (custo_name == "") {
-			alert("检查姓名");
+			message_box("检查姓名",3000);
 			return false;
 		}
 		var custo_sex = $("#custo_sex").val();
 		if (custo_sex == "") {
-			alert("检查性别");
+			message_box("检查性别",3000);
 			return false;
 		}
 		var custo_phone = $("#custo_phone").val();
 		if (custo_phone == "") {
-			alert("检查手机");
+			message_box("检查手机",3000);
 			return false;
 		}
 		var custo_identi = $("#custo_identi").val();
@@ -891,7 +870,7 @@ $(function() {
 			custo_identi:custo_identi, custo_birth:custo_birth, custo_mobie:custo_mobie, custo_adress, custo_email:custo_email},
 			function(data,status){
 				if (!data.success) {
-					alert(data.message);
+					message_box(data.message,3000);
 					pur_save.removeAttr("disabled");
 					pur_save.attr("value","保存");
 					return;
@@ -933,10 +912,16 @@ function no_data(){
 	var none_search = $(".none_search");
 	none_search.fadeOut(2000);
 };
+function message_box(msg,time_in_million){
+	var none_search2 = $(".none_search2");
+	none_search2.fadeIn("fast");
+	$("#ad_info").html(msg);
+	setTimeout("large_data()",time_in_million);
+};
 function large_data(){
 	var none_search2 = $(".none_search2");
 	none_search2.fadeOut(2000);
-};
+}
 function begin_query(){
 	var d = new Date();
 	var t = d.getTime();
@@ -1037,8 +1022,6 @@ function end_query(){
 		margin-top: 15px;
 	}
 	.section .menu{
-		/*margin: 2px;*/
-
 	}
 	.menu .list{
 		width: 49%;
@@ -1092,26 +1075,19 @@ function end_query(){
 		margin-top: 15px;
 	}
 	.item3 .item4{
-		float: left;
-		width: 98%;
-		margin: 0 7px 10px;
+		margin: 0 12px 6px 15px;
 	}
 	.item3 .item5{
-		float: left;
-		width: 98%;
-		margin: 5px 7px;
+		margin: 5px 15px;
 	}
 	.menu .item3{
 		float: left;
-		width: 100%;
+		width:100%;
 		font-size: 14px;
-		/*min-height: 16px;
-		_height: 200px;*/
 		border-bottom: 1px solid #f0f0f0;
-
 	}
-	.item4{
-
+	.cursor:hover{
+		background-color: #f0f0f0;
 	}
 	.menu .item3:last-child{
 		border-bottom:none;
@@ -1120,9 +1096,6 @@ function end_query(){
 		margin-bottom: 15px;
 	}
 	#fixed{
-		/*top:50px;
-		right:10%;
-		position: fixed;*/
 		float: right;
 	}
 	.show{
@@ -1161,20 +1134,6 @@ function end_query(){
 		margin-left: 93px;
 		cursor: pointer;
 	}
-	/*.employee{
-		height: 40px;
-		width: 40px;
-		background-position: -560px 0;
-		background-image: url(images/icons.png);
-		background-size: auto 40px;
-		background-repeat:no-repeat;
-		position: absolute;
-		margin-top: 150px;
-		cursor:  pointer;
-	}
-	.employee.on{
-
-	}*/
 	.add_purch.on{
 		background-position: -280px 0;
 	}
@@ -1284,39 +1243,33 @@ function end_query(){
 	.cursor_title{
 		text-align:center;
 		border-bottom: 1px solid #f0f0f0;
-		/*background-color: #dedede;*/
 		padding: 8px;
-		font-size: 18px;
-		/*font-weight: bold;*/
+		font-size: 16px;
+		font-weight: 700;
+		color: #555;
 	}
 	.cursor{
-		height: 39px;
+		height: 45px;
 		border-bottom: 1px solid #f0f0f0;
 		cursor: pointer;
 	}
 	.cursor .item{
-		height: 16px;
 		font-size: 12px;
-		margin-left: 5px;
-		/*border:1px solid #F7F7F7;*/
-		/*background: #F7F7F7;*/
+		margin-left: 15px;
+		padding-top: 5px;
 	}
 	.cursor .item .name{
-		margin: 2px;
 		width: 65%;
 	}
 	.cursor .item .type{
-		margin: 1px;
 		text-align:center;
 		width: 30%;
 	}
 	.cursor .item .plate{
-		margin: 1px;
 		width: 60%;
 	}
 	.cursor .item .time{
 		margin: 1px;
-		margin-left: 5px;
 	}
 	.content2{
 		width: 800px;
@@ -1339,7 +1292,6 @@ function end_query(){
 	}
 	.item span{
 		float: left;
-		margin-left: 1%;
 	}
 	.item input{
 		float: right;
@@ -1434,7 +1386,7 @@ function end_query(){
 	}
 	.weui_mask {
 	    position: fixed;
-	    z-index: 1;
+	    z-index: 10;
 	    width: 100%;
 	    height: 100%;
 	    top: 0;
@@ -1877,8 +1829,11 @@ function end_query(){
 	.bord{
 		background-color: #3C88FC;
 	}
-	.bord .item span{
+	.cursor.bord .item span{
 		color:white;
+	}
+	.cursor.bord:hover .item span{
+		color:#666;
 	}
 	#none_repair_data{
 		text-align: center;
@@ -2034,6 +1989,7 @@ function end_query(){
 	}
 	.pur_infos{
 		border-bottom: 1px solid #f0f0f0;
+		margin-left: 5px;
 	}
 	.pur_infos:last-child{
 		border-bottom: none;
@@ -2092,7 +2048,12 @@ function end_query(){
 	    font-size: 27px;
 	    height: 110px;
 	    width: 300px;
-	    margin: auto;
+	    top: 110px;
+		left: 50%;
+		z-index: 20;
+		-webkit-transform: translate(-50%, -50%);
+		transform: translate(-50%, -50%);
+		position: fixed;
 	}
 	.logo{
 		background: url(images/logo.png);
@@ -2387,6 +2348,9 @@ function end_query(){
 </style>
 </head>
 <body>
+	<div class="none_search2 none_data hide">
+		<div class="none" id="ad_info" style="text-align:center;">搜索匹配数据过多，请多输入几位！</div>
+	</div>
 	<div class="outside_search">
 		<div class="logo"></div>
 		<div class="search">
@@ -2404,9 +2368,6 @@ function end_query(){
 			<div class="none_search none_data hide">
 				<span class="none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;未找到数据，请新增客户档案！</span>
 				<span id="vihe_customer" class="new"></span>
-			</div>
-			<div class="none_search2 none_data hide">
-				<div class="none" id="ad_info" style="text-align:center;">搜索匹配数据过多，请多输入几位！</div>
 			</div>
 		</div>
 	</div>
@@ -2428,8 +2389,6 @@ function end_query(){
 					昨天绩效
 				</div>
 				<div class="body" id="jixiao">
-
-
 				</div>
 				<div style="clear:both;"></div>
 			</div>
@@ -2438,9 +2397,6 @@ function end_query(){
 					未完成采购申请单
 				</div>
 				<div class="menu" id="purchase_list">
-
-
-
 				</div>
 				<div style="clear:both;"></div>
 			</div>
@@ -2449,7 +2405,6 @@ function end_query(){
 					滞留车辆
 				</div>
 				<div class="menu" id="stay_vehicles">
-
 				</div>
 				<div style="clear:both;"></div>
 			</div>
@@ -2458,7 +2413,6 @@ function end_query(){
 					维修回访
 				</div>
 				<div class="menu" id="customers_feedback">
-
 				</div>
 				<div style="clear:both;"></div>
 			</div>
@@ -2470,8 +2424,11 @@ function end_query(){
 			<div class="item one">维修项目总金额: <%- company_kpi.amount %></div>
 			<div class="item one">我的维修金额:  <%- user_kpi.amount %></div>
 
-			<div class="item one" style="margin-bottom: 15px">接待顾客总数量: <%- company_kpi.customer_cnt %></div>
+			<div class="item one" >接待顾客总数量: <%- company_kpi.customer_cnt %></div>
 			<div class="item one">我接待顾客数量: <%- user_kpi.customer_cnt %></div>
+
+			<div class="item one" style="margin-bottom: 15px">顾客投诉总数量: <%- company_kpi.guanhuai_cnt %></div>
+			<div class="item one" style="margin-bottom: 15px">我接待的投诉数量: <%- user_kpi.guanhuai_cnt %></div>
 		</script>
 		<script id="purchase_infos" type="text/template">
 			<% _.forEach(purchases, function(purchase) { %>
@@ -2647,7 +2604,7 @@ function end_query(){
 				<div class="left" >
 					<div class="line">
 						<div class="font">
-							<span>送修人：</span><input id="repair_client_name" value="<%- repair_tot_items.contact_name %>"></input>
+							<span>送修人：</span><input id="contact_name" value="<%- repair_tot_items.contact_name %>"></input>
 						</div>
 						<div class="hehind">
 							<span>进厂里程：</span><input id="legend" value="<%- repair_tot_items.legend %>"></input>
@@ -2655,7 +2612,7 @@ function end_query(){
 					</div>
 					<div class="line">
 						<div class="font">
-							<span>送修电话：</span><input id="repair_phone_number" value="<%- repair_tot_items.contact_mobile %>"></input>
+							<span>送修电话：</span><input id="contact_mobile" value="<%- repair_tot_items.contact_mobile %>"></input>
 						</div>
 						<div class="hehind">
 							<span>ev里程：</span><input id="ev_legend" value="<%- repair_tot_items.ev_legend %>"></input>
@@ -2745,7 +2702,7 @@ function end_query(){
 										<div class="item_hour">&nbsp;&nbsp;<%- repair_item_info.gongshi %></div>
 										<div class="item_per_price">&nbsp;&nbsp;<%- repair_item_info.gongshi_price %></div>
 										<div class="item_tot_price">&nbsp;&nbsp;<%- repair_item_info.gongshi_fei %></div>
-										<div class="item_type type_change" id="type" data-id="<%- repair_item_info.id %>">&nbsp;&nbsp;<%- repair_item_info.type %>
+										<div class="item_type type_change" id="repair_store_name" data-id="<%- repair_item_info.id %>">&nbsp;&nbsp;<%- repair_item_info.repair_store_name %>
 											<select class="hide hello">
 												<option value="" disabled selected></option>
 												<option value="一般维修">一般维修</option>
@@ -2961,9 +2918,9 @@ function end_query(){
 		</script>
 		<script id="repair_search_results_infos" type="text/template">
 			<% _.forEach(items, function(item,index) { %>
-				<div class="repair_search_result_title" data-id="<%- item.id %>" data-name="<%- item.name %>">
+				<div class="repair_search_result_title" data-id="<%- item.repair_project_id %>" data-name="<%- item.repair_project_name %>">
 					<div class="repair_search_result_num"><%- index+1 %></div>
-					<div class="repair_search_result_name">&nbsp;&nbsp;<%- item.name %></div>
+					<div class="repair_search_result_name">&nbsp;&nbsp;<%- item.repair_project_name %></div>
 					<div class="repair_search_result_money">&nbsp;&nbsp;<%- item.gongshi %></div>
 					<div class="repair_search_result_hours">&nbsp;&nbsp;<%- item.gongshi_price %></div>
 					<div class="repair_search_result_tot">&nbsp;&nbsp;<%- item.gongshi_amount %></div>
@@ -2973,7 +2930,7 @@ function end_query(){
 		</script>
 		<script id="repair_selected_infos" type="text/template">
 			<% _.forEach(projects, function(repair_item_info) { %>
-				<div class="repair_cre_detail" data-id="<%- repair_item_info.id %>"><%- repair_item_info.name %></div>
+				<div class="repair_cre_detail" data-id="<%- repair_item_info.repair_project_id %>"><%- repair_item_info.repair_project_name %></div>
 			<% }); %>
 		</script>
 	</div>

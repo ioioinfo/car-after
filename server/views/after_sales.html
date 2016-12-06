@@ -1090,6 +1090,7 @@ function end_query(){
 		width:100%;
 		font-size: 14px;
 		border-bottom: 1px solid #f0f0f0;
+		padding: 5px;
 	}
 	.cursor:hover{
 		background-color: #f0f0f0;
@@ -1289,7 +1290,7 @@ function end_query(){
 	}
 
 	.content2 .section .item{
-		margin: 1%;
+		margin: 2px 2px 3px 7px;
 		height: 24px;
 		line-height: 24px;
 		width: 98%;
@@ -1332,7 +1333,7 @@ function end_query(){
 		font-size: 18px;
 	}
 	.content2 .section_last .item{
-		margin: 0.3%;
+		margin: 2px 2px 3px 5px;
 		height: 24px;
 		line-height: 24px;
 		width: 32.4%;
@@ -2039,7 +2040,7 @@ function end_query(){
 	.p3{
 		width: 698px;
 		float: left;
-		margin-left: 24px;
+		margin-left: 29px;
 		line-height: 18px;
 	}
 	.p4{
@@ -2349,7 +2350,15 @@ function end_query(){
 		overflow: auto;
 		height: 195px;
 	}
-
+	.right15{
+		margin-right: 15px;
+	}
+	.right10{
+		margin-right: 10px;
+	}
+	.right5{
+		margin-right: 5px;
+	}
 </style>
 </head>
 <body>
@@ -2438,8 +2447,8 @@ function end_query(){
 		<script id="purchase_infos" type="text/template">
 			<% _.forEach(purchases, function(purchase) { %>
 				<div class="pur_infos">
-					<div class="pur_list"><% if (purchase.promise_date) { %><%- purchase.days %>天&nbsp;|&nbsp;<%- purchase.promise_date %>&nbsp;|&nbsp;<% } %><span class="lianjie" data-id="<%- purchase.client_id %>"><%- purchase.client_name %></span>&nbsp;(<%- purchase.mobile %>);<span style="cursor: pointer;" class="lianjie"></span></div>
-					<div class="pur_list" style="color:#8d8d8d;"><%- purchase.quantity %>个<%- purchase.peijian_name %>&nbsp;(<%- purchase.peijian_code %>)，共<%- purchase.xiaoshou_price*purchase.quantity %>元</div>
+					<div class="pur_list"><% if (purchase.promise_date) { %><span class="right15"><%- purchase.days %>天</span><span class="right15"><%- purchase.promise_date %></span><% } %><span class="lianjie right10" data-id="<%- purchase.client_id %>"><%- purchase.client_name %></span>(&nbsp;<%- purchase.mobile %>&nbsp;)<span style="cursor: pointer;" class="lianjie"></span></div>
+					<div class="pur_list" style="color:#8d8d8d;"><span class="right10"><%- purchase.quantity %>个</span><span class="right10"><%- purchase.peijian_name %></span><span class="right5">(<%- purchase.peijian_code %>)，</span>共<%- purchase.xiaoshou_price*purchase.quantity %>元</div>
 					<% if (purchase.remark) { %>
 						<div class="pur_list"><%- purchase.remark %></div>
 					<% } %>
@@ -2561,7 +2570,7 @@ function end_query(){
 							<span style="margin-left:3px;<% if (repair.hours >100) { %>color:#ff0000;<% } %>">
 								<% if (repair.shoukuan_date) { %><%- repair.hours %>小时<% } else { %>未结束<% } %>
 							</span>
-							<span style="margin-left:40px;">进厂时间：<%- repair.jinchang_time %></span>
+							<span style="margin-left:45px;">进厂时间：<%- repair.jinchang_time %></span>
 							<% if (repair.shoukuan_date) { %><span style="margin-left:47px;">收款时间：<%- repair.shoukuan_date %></span><% } else{ %>
 							<span id="repair_update" data-id="<%- repair.id %>" style="float:right;margin-right:6px;cursor: pointer;">修改</span><% } %>
 
@@ -2707,7 +2716,7 @@ function end_query(){
 										<div class="item_hour">&nbsp;&nbsp;<%- repair_item_info.gongshi %></div>
 										<div class="item_per_price">&nbsp;&nbsp;<%- repair_item_info.gongshi_price %></div>
 										<div class="item_tot_price">&nbsp;&nbsp;<%- repair_item_info.gongshi_fei %></div>
-										<div class="item_type type_change" id="repair_store_name" data-id="<%- repair_item_info.id %>"><span><%- repair_item_info.repair_store_name %></span>
+										<div class="item_type type_change" id="repair_store_name" data-id="<%- repair_item_info.id %>"><span style="margin-left:8px;"><%- repair_item_info.repair_store_name %></span>
 											<select class="hide hello" >
 												<option value="" disabled selected></option>
 												<option value="一般维修">一般维修</option>

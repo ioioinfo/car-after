@@ -587,6 +587,7 @@ $(function() {
 						$("#peijian_price").val(price);
 						$("#peijian_id").val(code);
 						$("#add_peijian").addClass("hide");
+						$("#add_peijian").html("");
 						$("#peijian_num").change(function(){
 							var num = $(this).val();
 							$("#peijian_price").val(price*num);
@@ -595,6 +596,8 @@ $(function() {
 				}
 			}else {
 				message_box(data.message,3000);
+				$("#add_peijian").html("");
+				$("#add_peijian").addClass("hide");
 			}
 		});
 	};
@@ -1075,6 +1078,9 @@ function end_query(){
 		margin-top: 15px;
 	}
 	.item3:hover{
+		background-color: #f0f0f0;
+	}
+	.line_last:hover{
 		background-color: #f0f0f0;
 	}
 	.item3 .item4{
@@ -2347,6 +2353,9 @@ function end_query(){
 	    cursor: pointer;
 		overflow: auto;
 		height: 195px;
+	}
+	.peijian_name2{
+		margin:3px;
 	}
 	.right15{
 		margin-right: 15px;

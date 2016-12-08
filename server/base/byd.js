@@ -295,11 +295,14 @@ var remind_save = function(data, cb){
 				};
 				user_login_check(info, function(err, content){
 					if (!err) {
-						console.log(content);
-						var row = content.row;
-						var state = {user_id:row.id};
-						var user_id = row.id;
-						return reply({"success":true,message:"ok","row":row}).state('cookie', state, {ttl:10*365*24*60*60*1000});
+						if (content.success){
+							var row = content.row;
+							var state = {user_id:row.id};
+							var user_id = row.id;
+							return reply({"success":true,message:"ok","row":row}).state('cookie', state, {ttl:10*365*24*60*60*1000});
+						}else {
+							return reply({"success":false,message:content.message});
+						}
 					} else {
 						return reply({"success":false,message:err});
 					}

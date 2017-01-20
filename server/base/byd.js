@@ -97,7 +97,6 @@ var employee_kpi = function(user_id,cb){
 	url = "http://211.149.248.241:11002/api/kpi_after?user_id=" + user_id;
 	do_get_method(url,cb);
 }
-
 //滞留车辆
 var stay_vehicles = function(user_id,cb){
 	var url = "http://211.149.245.32:8787/after/list_overdate_repair?user_id=" + user_id;
@@ -150,6 +149,12 @@ var remind_save = function(data, cb){
 	var url = "http://211.149.245.32:8787/after/update_repair_car_tixing";
 	do_post_method(url,data,cb);
 };
+//创建新维修单号
+var new_repair_no = function(cb){
+	var url = "http://211.149.245.32:8787/after/new_repair_no";
+	do_get_method(url,cb);
+};
+
 	server.route([
 		//用户登入
 		{
@@ -260,8 +265,14 @@ var remind_save = function(data, cb){
 							console.log(client_id);
 							console.log(content);
 							var rows = content.rows;
-							var mobile = rows[0].mobile;
-							var client_id = rows[0].id;
+							if (rows.length >0) {
+								var mobile = rows[0].mobile;
+								var client_id = rows[0].id;
+							}else {
+								var mobile = null;
+								var client_id = null;
+							}
+
 							var ep = eventproxy.create("vips", "repair_orders", "purchase_infos", function (vips, repair_orders, purchase_infos) {
 								return reply({"success":true,message:"ok","rows":rows,"today_info":content.today_info,"vips":vips,"repair_orders":repair_orders, "purchase_infos":purchase_infos});
 							});
@@ -547,9 +558,9 @@ var remind_save = function(data, cb){
 					repair_order.user_id = user_id;
 					create_repair_paper({"repair_order":JSON.stringify(repair_order)}, function(err, content){
 						if (!err) {
-							console.log("content:"+content);
+							console.log("content:"+JSON.stringify(content));
 							if (content.success) {
-								return reply({"success":true,message:"ok"});
+								return reply({"success":true,message:"ok","order_id":content.order_id});
 							} else {
 								return reply(content);
 							}
@@ -588,6 +599,24 @@ var remind_save = function(data, cb){
 							return reply({"success":false,message:err});
 						}
 					});
+				});
+			}
+		},
+		//新增维修单创建临时单号
+		{
+			method: 'GET',
+			path: '/create_repair_no',
+			handler: function(request, reply){
+				new_repair_no(function(err,row){
+					if (!err) {
+						if (row.success) {
+							return reply({"success":true,message:"ok","repair_no":row.repair_no});
+						}else {
+							return reply({"success":false,message:"create fail"});
+						}
+					}else {
+						return reply({"success":false,message:err});
+					}
 				});
 			}
 		},

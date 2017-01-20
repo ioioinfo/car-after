@@ -6,951 +6,1000 @@
 <title>BYD售后服务</title>
 <script src="http://libs.baidu.com/jquery/2.0.3/jquery.min.js" type="text/javascript"></script>
 <script src="js/lodash.min.js" type="text/javascript"></script>
+<script src="js/print.js" type="text/javascript"></script>
 <script src="css/reset.css" type="text/css"></script>
 <script>
-$(function() {
-	var show = $(".show");
-	var con = $(".content");
-	var search = $(".search");
-	var go = $(".goin");
-	var go2 = $(".goin2");
-	var customers = $(".customers");
-	var content2 = $(".content2");
-	var back = $(".back");
-	var cursor = $(".cursor");
-	var add_purch = $(".add_purch");
-	var purchase = $(".purchase");
-	var vihe_customer = $("#vihe_customer");
-	var vehicle_customer = $(".vehicle_customer")
-	var none_search = $(".none_search");
-	var none_search2 = $(".none_search2");
-	var results = $(".results");
-	var button2 = $(".button2");
-	var button3 = $(".button3");
-	var search_result;
-	var repair_tot_items = {"projects":[]};
-	var employee_info = {{employee|safe}};
-	var repair_item_status = 0;
-	var jixiaos = {{jixiaos|safe}};
-	var today_infos = {{rows|safe}};
-	var feedbacks = {{feedbacks|safe}};
-	var vehicles = {{vehicles|safe}};
-	var purchases = {{purchases|safe}};
-	var vehicle_total_infos;
-	var page_status = 1;
-	var content3 = $(".content3");
-	var content4 = $(".content4");
-	var income = 0;
-	var hours = 0;
-	window.search_status = {
-		"time" :0,
-		"running" :false
-	};
-	//点击登出事件
-	$(".logout").click(function(){
-		location.href ="/login";
-	});
-	//系统提醒保存
-	var remind_save = function(){
-		var info = $("#remind").val();
-		var client_id = search_result.row.id;
-		var car_id =search_result.row.car_id;
-		$.post("/remind_update",{info:info,client_id:client_id,car_id:car_id},function(data,status){
-			if (data.success) {
-				message_box("系统提醒修改成功！",3000);
-			}else {
-				message_box(data.message,3000);
+	$(function() {
+		var show = $(".show");
+		var con = $(".content");
+		var search = $(".search");
+		var go = $(".goin");
+		var go2 = $(".goin2");
+		var customers = $(".customers");
+		var content2 = $(".content2");
+		var back = $(".back");
+		var cursor = $(".cursor");
+		var add_purch = $(".add_purch");
+		var purchase = $(".purchase");
+		var vihe_customer = $("#vihe_customer");
+		var vehicle_customer = $(".vehicle_customer")
+		var none_search = $(".none_search");
+		var none_search2 = $(".none_search2");
+		var results = $(".results");
+		var button2 = $(".button2");
+		var button3 = $(".button3");
+		var search_result;
+		var repair_tot_items = {"projects":[]};
+		var employee_info = {{employee|safe}};
+		var repair_item_status = 0;
+		var jixiaos = {{jixiaos|safe}};
+		var today_infos = {{rows|safe}};
+		var feedbacks = {{feedbacks|safe}};
+		var vehicles = {{vehicles|safe}};
+		var purchases = {{purchases|safe}};
+		var vehicle_total_infos;
+		var page_status = 1;
+		var content3 = $(".content3");
+		var content4 = $(".content4");
+		var income = 0;
+		var hours = 0;
+		var new_repair_no = "";
+		window.search_status = {
+			"time" :0,
+			"running" :false
+		};
+		//点击登出事件
+		$(".logout").click(function(){
+			location.href ="/login";
+		});
+		//系统提醒保存
+		var remind_save = function(){
+			var info = $("#remind").val();
+			var client_id = search_result.row.id;
+			var car_id =search_result.row.car_id;
+			$.post("/remind_update",{info:info,client_id:client_id,car_id:car_id},function(data,status){
+				if (data.success) {
+					message_box("系统提醒修改成功！",3000);
+				}else {
+					message_box(data.message,3000);
+				}
+			});
+		};
+		//当维修单有数据时候，刷新页面提醒
+		$(window).bind('beforeunload',function(){
+			if (repair_tot_items.name) {
+				return '您输入的内容尚未保存，确定离开此页面吗？';
 			}
 		});
-	};
-	//当维修单有数据时候，刷新页面提醒
-	$(window).bind('beforeunload',function(){
-		if (repair_tot_items.name) {
-			return '您输入的内容尚未保存，确定离开此页面吗？';
-		}
-	});
-	//维修委托单
-	var repair_paper = function(){
-		var t = _.template($("#repair_paper_infos").html());
-		$("#repair_paper").html(t({repair_tot_items:repair_tot_items,search_result:search_result}));
-		//取消按钮
-		$(".repair_cancel").click(function(){
-			content3.addClass("hide");
-			$(".borderline").removeClass("bord");
-		});
-		//新增维修项目
-		$(".repair_add").click(function(){
-			repair_add();
-		});
-		//批量修改类型
-		$("#change_type").change(function(){
-			change_repair_type();
-		});
+		//维修委托单
+		var repair_paper = function(){
+			//调接口
+			$.get("/create_repair_no",function(data){
+				if (data.success) {
+					new_repair_no = data.repair_no;
+					repair_tot_items.new_repair_no = new_repair_no;
+					var t = _.template($("#repair_paper_infos").html());
+					$("#repair_paper").html(t({repair_tot_items:repair_tot_items,search_result:search_result}));
+					//取消按钮
+					$(".repair_cancel").click(function(){
+						content3.addClass("hide");
+						$(".borderline").removeClass("bord");
+					});
+					//新增维修项目
+					$(".repair_add").click(function(){
+						repair_add();
+					});
+					//打印
+					$(".repair_print").click(function(){
+
+						repair_tot_items.plate_numbers = search_result.row.plate_numbers;
+						repair_tot_items.vin_no = search_result.row.vin_no;
+						repair_tot_items.engine = search_result.engine;
+						repair_tot_items.huiyuankafenlei_name = search_result.vip.huiyuankafenlei_name;
+						repair_tot_items.zhuzhanghu_yue = search_result.vip.zhuzhanghu_yue;
+						repair_tot_items.car_id = search_result.row.car_id;
+						repair_tot_items.car_brand = search_result.row.car_brand;
+						repair_tot_items.car_type = search_result.row.car_type;
+						repair_tot_items.car_color = search_result.row.car_color;
+						repair_tot_items.pailiang_type = search_result.row.pailiang_type;
+						repair_tot_items.client_id = search_result.row.id;
+						repair_tot_items.client_name = search_result.row.name;
+						repair_tot_items.client_mobile = search_result.row.mobile;
+						repair_tot_items.jinchang_time = repair.jinchang_time;
+						var t = _.template($("#repair_content_infos").html());
+						$(".repair_content_print").html(t({repair_tot_items:repair_tot_items,search_result:search_result}));
+
+						$("#content5").removeClass("hide");
+
+						$("#repair_content").printArea();
+					});
+					//批量修改类型
+					$("#change_type").change(function(){
+						change_repair_type();
+					});
+					//保存维修委托单
+					$(".repair_save").click(function(){
+						repair_paper_save();
+					});
+					//维修项目高亮删除
+					$(".repair_delete").click(function(){
+						repair_item_delete();
+					});
+					//点击维修项目高亮
+					$(".borderline").click(function(){
+						$(".borderline").removeClass("bord");
+						$(this).addClass("bord");
+					});
+					//input框改变，内容存入维修单变量中
+					$("#repair_paper input").change(function(){
+						var id = $(this).attr("id");
+						if ($(this).attr("type") == "checkbox") {
+							repair_tot_items[id] = $(this).is(":checked");
+						} else {
+							repair_tot_items[id] = $(this).val();
+						}
+					});
+					$("#repair_paper textarea").change(function(){
+						var id = $(this).attr("id");
+						repair_tot_items[id] = $(this).val();
+					});
+					$(".type_change").click(function(){
+						$(".hello").addClass("hide");
+						$(this).children(".hello").show();
+						$(this).children("span").hide();
+						var id = $(this).data("id");
+						var type = $(this).children(".hello").val();
+						if (type) {
+							for (var i = 0; i < repair_tot_items.projects.length; i++) {
+								if (id == repair_tot_items.projects[i].id) {
+									repair_tot_items.projects[i].repair_store_name = type;
+									break;
+								}
+							}
+							repair_paper();
+						}
+						// $(this).children(".hello").addClass("hide");
+					});
+				}else {
+					alert(data.message)
+				}
+			});
+		};
 		//保存维修委托单
-		$(".repair_save").click(function(){
-			repair_paper_save();
-		});
-		//维修项目高亮删除
-		$(".repair_delete").click(function(){
-			repair_item_delete();
-		});
-		//点击维修项目高亮
-		$(".borderline").click(function(){
+		var repair_paper_save = function(){
+			content3.addClass("hide");
+			repair_tot_items.store_id = employee_info.store_id;
+			repair_tot_items.mendian_name = employee_info.mendian;
+
+			repair_tot_items.plate_numbers = search_result.row.plate_numbers;
+			repair_tot_items.vin_no = search_result.row.vin_no;
+			repair_tot_items.engine = search_result.engine;
+			repair_tot_items.huiyuankafenlei_name = search_result.vip.huiyuankafenlei_name;
+			repair_tot_items.zhuzhanghu_yue = search_result.vip.zhuzhanghu_yue;
+			repair_tot_items.car_id = search_result.row.car_id;
+			repair_tot_items.car_brand = search_result.row.car_brand;
+			repair_tot_items.car_type = search_result.row.car_type;
+			repair_tot_items.car_color = search_result.row.car_color;
+			repair_tot_items.pailiang_type = search_result.row.pailiang_type;
+			repair_tot_items.client_id = search_result.row.id;
+			repair_tot_items.client_name = search_result.row.name;
+			repair_tot_items.client_mobile = search_result.row.mobile;
+
+			$.post("/save_repair_paper",{repair_tot_items:JSON.stringify(repair_tot_items)},function(data,status){
+				if(data.success){
+					click_serarch_result(search_result.row.client_id);
+					end_query();
+					repair_tot_items = {"projects":[]};
+					message_box("已成功创建维修委托单！",3000);
+				}else {
+					message_box(data.message,3000);
+				}
+			});
+
+
+		};
+		//新增维修项目
+		var repair_add = function(){
 			$(".borderline").removeClass("bord");
-			$(this).addClass("bord");
+			content3.addClass("hide");
+			content4.removeClass("hide");
+			window.projects = _.cloneDeep(repair_tot_items.projects);
+			selected_items_model();
+		};
+		var repair_baoyang = function(){
+			var t = _.template($("#baoyang_items_infos").html());
+			$("#baoyang_items").html(t);
+		}
+		repair_baoyang();
+		//维修工时费计算
+		var work_income = function(){
+			income = 0;
+			hours = 0;
+			if (repair_tot_items.projects) {
+				for (var i = 0; i < repair_tot_items.projects.length; i++) {
+					income = repair_tot_items.projects[i].gongshi_amount + income;
+					hours = repair_tot_items.projects[i].gongshi;
+				}
+			}
+			repair_tot_items.income = income;
+			repair_tot_items.gongshi_feiyong = income;
+			repair_tot_items.gongshi = hours;
+			repair_tot_items.gongshi_zhekou = 1;
+			if (search_result.vip.gongshi_zhekou) {
+				repair_tot_items.gongshi_zhekou = search_result.vip.gongshi_zhekou;
+				repair_tot_items.total = (income * search_result.vip.gongshi_zhekou).toFixed(2);
+			}
+		};
+		//点击维修
+		$("#repair").click(function(){
+			$(this).addClass("on");
+			$("#baoyang").removeClass("on");
+			$(".baoyang_item").removeClass("on");
+			$("#baoyang_items").addClass("hide");
+			$("#repair_items").removeClass("hide");
+			repair_item_status = 1;
 		});
-		//input框改变，内容存入维修单变量中
-		$("#repair_paper input").change(function(){
-			var id = $(this).attr("id");
-			if ($(this).attr("type") == "checkbox") {
-				repair_tot_items[id] = $(this).is(":checked");
-			} else {
-				repair_tot_items[id] = $(this).val();
+		//点击保养
+		$("#baoyang").click(function(){
+			$(this).addClass("on");
+			$("#repair").removeClass("on");
+			$("#baoyang_items").removeClass("hide");
+			$("#repair_items").addClass("hide");
+			repair_item_status = 0;
+		});
+		//点击保养项目
+		$(".baoyang_item").click(function(){
+			if ($(this).attr("class") != "baoyang_item") {
+				$(this).removeClass("on");
+				return;
+			}
+			$(this).addClass("on");
+		});
+		//查询维修项目
+		go2.click(function(){
+			search_repair_items();
+		});
+		var search_repair_items = function(){
+			var info = encodeURI($("#txt2").val());
+			var store_id = employee_info.store_id;
+			var pailiang_type = search_result.row.pailiang_type;
+			if (info) {
+				begin_query();
+				$.post("/find_repair_items",{info:info,store_id:store_id,pailiang_type:pailiang_type},function(data,status){
+					end_query();
+					if(data.success){
+						if (data.rows) {
+							repair_items_model(data.rows);
+						}
+					}else {
+						message_box(data.message,3000);
+					}
+				});
+			}
+		}
+		//维修项目键盘按下搜索
+		$("#txt2").keypress(function(e){
+			var key = e.which; //e.which是按键的值
+			if (key == 13) {
+				search_repair_items();
 			}
 		});
-		$("#repair_paper textarea").change(function(){
-			var id = $(this).attr("id");
-			repair_tot_items[id] = $(this).val();
-		});
-		$(".type_change").click(function(){
-			$(".hello").addClass("hide");
-			$(this).children(".hello").show();
-			$(this).children("span").hide();
-			var id = $(this).data("id");
-			var type = $(this).children(".hello").val();
-			if (type) {
-				for (var i = 0; i < repair_tot_items.projects.length; i++) {
-					if (id == repair_tot_items.projects[i].id) {
-						repair_tot_items.projects[i].repair_store_name = type;
+		//维修项目模板
+		var repair_items_model = function(items){
+			var t = _.template($("#repair_search_results_infos").html());
+			$("#repair_search_results").html(t({items:items}));
+			//添加点击维修项目高亮
+			$(".repair_search_result_title").click(function() {
+				$(".repair_search_result_title").removeClass("bord");
+				$(this).addClass("bord");
+			});
+			//双击添加到左边
+			$(".repair_search_result_title").dblclick(function(){
+				var name = $(this).data("name");
+				var id = $(this).data("id");
+				add_repair_items(id,name,items);
+			});
+			//保存按钮，复制到维修单，维修项目数组里
+			$(".baoyang_save").click(function(){
+				repair_tot_items.projects = projects;
+				content3.removeClass("hide");
+				content4.addClass("hide");
+				work_income();
+				repair_paper();
+			});
+		};
+		//双击移除左边
+		var selected_remove =function(id){
+			for (var i = 0; i < projects.length; i++) {
+				if (projects[i].repair_project_id == id) {
+					projects.splice(i,1);
+					break;
+				}
+			}
+		};
+		//维修项目选择后添加到左边模板
+		var selected_items_model = function(){
+			var t = _.template($("#repair_selected_infos").html());
+			$("#repair_selected").html(t({projects:projects}));
+			//左边双击移除
+			$(".repair_cre_detail").dblclick(function(){
+				var id = $(this).data("id");
+				$(this).remove();
+				selected_remove(id);
+			});
+			//左边单击高亮
+			$(".repair_cre_detail").click(function(){
+				$(".repair_cre_detail").removeClass("bord");
+				$(this).addClass("bord");
+			});
+		};
+		//双击添加到左边，同时存入一个变量中
+		var add_repair_items = function(id,name,items){
+			var exists = false;
+			if (projects) {
+				for (var i = 0; i < projects.length; i++) {
+					if (projects[i].repair_project_id == id) {
+						exists = true;
+						message_box("维修项目已存在！",2000);
 						break;
 					}
 				}
-				repair_paper();
 			}
-			// $(this).children(".hello").addClass("hide");
-		});
-	};
-	//保存维修委托单
-	var repair_paper_save = function(){
-		content3.addClass("hide");
-		repair_tot_items.store_id = employee_info.store_id;
-		repair_tot_items.mendian_name = employee_info.mendian;
-
-		repair_tot_items.plate_numbers = search_result.row.plate_numbers;
-		repair_tot_items.vin_no = search_result.row.vin_no;
-		repair_tot_items.engine = search_result.engine;
-		repair_tot_items.huiyuankafenlei_name = search_result.vip.huiyuankafenlei_name;
-		repair_tot_items.zhuzhanghu_yue = search_result.vip.zhuzhanghu_yue;
-		repair_tot_items.car_id = search_result.row.car_id;
-		repair_tot_items.car_brand = search_result.row.car_brand;
-		repair_tot_items.car_type = search_result.row.car_type;
-		repair_tot_items.car_color = search_result.row.car_color;
-		repair_tot_items.pailiang_type = search_result.row.pailiang_type;
-		repair_tot_items.client_id = search_result.row.id;
-		repair_tot_items.client_name = search_result.row.name;
-		repair_tot_items.client_mobile = search_result.row.mobile;
-
-		$.post("/save_repair_paper",{repair_tot_items:JSON.stringify(repair_tot_items)},function(data,status){
-			if(data.success){
-				click_serarch_result(search_result.row.client_id);
-				end_query();
-				repair_tot_items = {"projects":[]};
-				message_box("已成功创建维修委托单！",3000);
-			}else {
-				message_box(data.message,3000);
-			}
-		});
-
-
-	};
-	//新增维修项目
-	var repair_add = function(){
-		$(".borderline").removeClass("bord");
-		content3.addClass("hide");
-		content4.removeClass("hide");
-		window.projects = _.cloneDeep(repair_tot_items.projects);
-		selected_items_model();
-	};
-	var repair_baoyang = function(){
-		var t = _.template($("#baoyang_items_infos").html());
-		$("#baoyang_items").html(t);
-	}
-	repair_baoyang();
-	//维修工时费计算
-	var work_income = function(){
-		income = 0;
-		hours = 0;
-		if (repair_tot_items.projects) {
-			for (var i = 0; i < repair_tot_items.projects.length; i++) {
-				income = repair_tot_items.projects[i].gongshi_amount + income;
-				hours = repair_tot_items.projects[i].gongshi;
-			}
-		}
-		repair_tot_items.income = income;
-		repair_tot_items.gongshi_feiyong = income;
-		repair_tot_items.gongshi = hours;
-		repair_tot_items.gongshi_zhekou = 1;
-		if (search_result.vip.gongshi_zhekou) {
-			repair_tot_items.gongshi_zhekou = search_result.vip.gongshi_zhekou;
-			repair_tot_items.total = (income * search_result.vip.gongshi_zhekou).toFixed(2);
-		}
-	};
-	//点击维修
-	$("#repair").click(function(){
-		$(this).addClass("on");
-		$("#baoyang").removeClass("on");
-		$(".baoyang_item").removeClass("on");
-		$("#baoyang_items").addClass("hide");
-		$("#repair_items").removeClass("hide");
-		repair_item_status = 1;
-	});
-	//点击保养
-	$("#baoyang").click(function(){
-		$(this).addClass("on");
-		$("#repair").removeClass("on");
-		$("#baoyang_items").removeClass("hide");
-		$("#repair_items").addClass("hide");
-		repair_item_status = 0;
-	});
-	//点击保养项目
-	$(".baoyang_item").click(function(){
-		if ($(this).attr("class") != "baoyang_item") {
-			$(this).removeClass("on");
-			return;
-		}
-		$(this).addClass("on");
-	});
-	//查询维修项目
-	go2.click(function(){
-		search_repair_items();
-	});
-	var search_repair_items = function(){
-		var info = encodeURI($("#txt2").val());
-		var store_id = employee_info.store_id;
-		var pailiang_type = search_result.row.pailiang_type;
-		if (info) {
-			begin_query();
-			$.post("/find_repair_items",{info:info,store_id:store_id,pailiang_type:pailiang_type},function(data,status){
-				end_query();
-				if(data.success){
-					if (data.rows) {
-						repair_items_model(data.rows);
+			if (!exists) {
+				for (var i = 0; i < items.length; i++) {
+					var item = {};
+					if (items[i].repair_project_id == id) {
+						item = items[i];
+						projects.unshift(item);
+						break;
 					}
-				}else {
-					message_box(data.message,3000);
 				}
-			});
+				selected_items_model();
+				// $(".repair_fin_items").append("<div class='repair_cre_detail'>"+name+"</div>");
+			}
 		}
-	}
-	//维修项目键盘按下搜索
-	$("#txt2").keypress(function(e){
-		var key = e.which; //e.which是按键的值
-		if (key == 13) {
-			search_repair_items();
-		}
-	});
-	//维修项目模板
-	var repair_items_model = function(items){
-		var t = _.template($("#repair_search_results_infos").html());
-		$("#repair_search_results").html(t({items:items}));
-		//添加点击维修项目高亮
-		$(".repair_search_result_title").click(function() {
-			$(".repair_search_result_title").removeClass("bord");
-			$(this).addClass("bord");
-		});
-		//双击添加到左边
-		$(".repair_search_result_title").dblclick(function(){
-			var name = $(this).data("name");
-			var id = $(this).data("id");
-			add_repair_items(id,name,items);
-		});
-		//保存按钮，复制到维修单，维修项目数组里
+		//成功添加维修项目
 		$(".baoyang_save").click(function(){
-			repair_tot_items.projects = projects;
+			if (repair_item_status == 0) {
+				return;
+			}
+			return;
+		});
+		//批量修改类型
+		var change_repair_type = function(){
+			var type = $("#change_type").val();
+			for (var i = 0; i < repair_tot_items.projects.length; i++) {
+				repair_tot_items.projects[i].repair_store_name = type;
+			}
+			repair_paper();
+		};
+		//维修项目高亮删除
+		var repair_item_delete = function(){
+			var id = $(".borderline.bord").data("id");
+			for (var i = 0; i < repair_tot_items.projects.length; i++) {
+				if (repair_tot_items.projects[i].repair_project_id == id) {
+					repair_tot_items.projects.splice(i,1);
+					work_income();
+					repair_paper();
+					break;
+				}
+			}
+		};
+		//点击取消
+		$(".baoyang_cancel").click(function(){
 			content3.removeClass("hide");
 			content4.addClass("hide");
-			work_income();
-			repair_paper();
 		});
-	};
-	//双击移除左边
-	var selected_remove =function(id){
-		for (var i = 0; i < projects.length; i++) {
-			if (projects[i].repair_project_id == id) {
-				projects.splice(i,1);
-				break;
+		//页面状态
+		var change_page = function(status){
+			//首页
+			if (status == 1) {
+				show.addClass("on");
+				add_purch.removeClass("on");
+				add_purch.css("cursor","not-allowed");
+				$(".cursor").removeClass("bord");
+				con.removeClass("hide");
+				content2.addClass("hide");
+				results.addClass("hide");
+				page_status = 1;
+			}else if (status == 2) { //查询页面
+				show.removeClass("on");
+				add_purch.removeClass("on");
+				add_purch.css("cursor","not-allowed");
+				$(".cursor").removeClass("bord");
+				results.removeClass("hide");
+				content2.addClass("hide");
+				con.addClass("hide");
+				page_status = 2;
+			}else if (status ==3) { //客户信息页面
+				show.removeClass("on");
+				add_purch.removeClass("on");
+				add_purch.css("cursor","pointer");
+				$(".cursor").removeClass("bord");
+				content2.removeClass("hide");
+				results.addClass("hide");
+				con.addClass("hide");
+				page_status = 3;
 			}
-		}
-	};
-	//维修项目选择后添加到左边模板
-	var selected_items_model = function(){
-		var t = _.template($("#repair_selected_infos").html());
-		$("#repair_selected").html(t({projects:projects}));
-		//左边双击移除
-		$(".repair_cre_detail").dblclick(function(){
-			var id = $(this).data("id");
-			$(this).remove();
-			selected_remove(id);
-		});
-		//左边单击高亮
-		$(".repair_cre_detail").click(function(){
-			$(".repair_cre_detail").removeClass("bord");
-			$(this).addClass("bord");
-		});
-	};
-	//双击添加到左边，同时存入一个变量中
-	var add_repair_items = function(id,name,items){
-		var exists = false;
-		if (projects) {
-			for (var i = 0; i < projects.length; i++) {
-				if (projects[i].repair_project_id == id) {
-					exists = true;
-					message_box("维修项目已存在！",2000);
-					break;
-				}
-			}
-		}
-		if (!exists) {
-			for (var i = 0; i < items.length; i++) {
-				var item = {};
-				if (items[i].repair_project_id == id) {
-					item = items[i];
-					projects.unshift(item);
-					break;
-				}
-			}
-			selected_items_model();
-			// $(".repair_fin_items").append("<div class='repair_cre_detail'>"+name+"</div>");
-		}
-	}
-	//成功添加维修项目
-	$(".baoyang_save").click(function(){
-		if (repair_item_status == 0) {
-			return;
-		}
-		return;
-	});
-	//批量修改类型
-	var change_repair_type = function(){
-		var type = $("#change_type").val();
-		for (var i = 0; i < repair_tot_items.projects.length; i++) {
-			repair_tot_items.projects[i].repair_store_name = type;
-		}
-		repair_paper();
-	};
-	//维修项目高亮删除
-	var repair_item_delete = function(){
-		var id = $(".borderline.bord").data("id");
-		for (var i = 0; i < repair_tot_items.projects.length; i++) {
-			if (repair_tot_items.projects[i].repair_project_id == id) {
-				repair_tot_items.projects.splice(i,1);
-				work_income();
-				repair_paper();
-				break;
-			}
-		}
-
-	};
-	//点击取消
-	$(".baoyang_cancel").click(function(){
-		content3.removeClass("hide");
-		content4.addClass("hide");
-	});
-	//页面状态
-	var change_page = function(status){
-		//首页
-		if (status == 1) {
-			show.addClass("on");
-			add_purch.removeClass("on");
-			add_purch.css("cursor","not-allowed");
-			$(".cursor").removeClass("bord");
-			con.removeClass("hide");
-			content2.addClass("hide");
-			results.addClass("hide");
-			page_status = 1;
-		}else if (status == 2) { //查询页面
-			show.removeClass("on");
-			add_purch.removeClass("on");
-			add_purch.css("cursor","not-allowed");
-			$(".cursor").removeClass("bord");
-			results.removeClass("hide");
-			content2.addClass("hide");
-			con.addClass("hide");
-			page_status = 2;
-		}else if (status ==3) { //客户信息页面
-			show.removeClass("on");
-			add_purch.removeClass("on");
-			add_purch.css("cursor","pointer");
-			$(".cursor").removeClass("bord");
-			content2.removeClass("hide");
-			results.addClass("hide");
-			con.addClass("hide");
-			page_status = 3;
-		}
-	};
-	//查询会员卡号
-	var check_member_info = function () {
-		var num = $("#huiyuan_number").val();
-		$.get("/check_member", {"num":num}, function(data,status){
-			if (data.member_info.length == 1) {
-				var member_info = data.member_info[0];
-				$("#vip_name").attr("value",member_info.client_name);
-				$("#vip_type").attr("value",member_info.huiyuankafenlei_name);
-				$("#vip_mobile").attr("value",member_info.mobile);
-				$("#vip_ruhui_date").attr("value",member_info.ruhui_date);
-				$("#vip_plate_numbers").attr("value",member_info.chepaihao);
-				$("#vip_shenfenzhenghaoma").attr("value",member_info.shenfenzhenghaoma);
-				$("#vip_ka_bianhao").attr("value",member_info.ka_bianhao);
-				$("#vip_zhuzhanghu_yue").attr("value",member_info.zhuzhanghu_yue);
-				search_result.vip = member_info;
-			}else {
-
-			}
-		});
-	};
-	// 刷新今天搜索面板
-	var refresh_today_search = function() {
-		var t = _.template($("#today_search_infos").html());
-		$("#search_today").html(t({today_infos:today_infos}));
-		$(".cursor").click(function(){
-			$(".cursor").removeClass("bord");
-			var client_id = $(this).data("id");
-			$(this).addClass("bord");
-			click_serarch_result(client_id);
-		});
-	};
-	refresh_today_search();
-	//首页绩效
-	var jixiao_list = function(){
-		var company_kpi = {"amount": 0,"customer_cnt": 0, "project_cnt": 0, "guanhuai_cnt":0};
-		var user_kpi = {"amount": 0,"customer_cnt": 0, "project_cnt": 0, "guanhuai_cnt":0};
-		if (jixiaos.company_kpi) {
-			company_kpi = jixiaos.company_kpi;
-		}
-		if (jixiaos.user_kpi) {
-			user_kpi = jixiaos.user_kpi;
-		}
-		var t = _.template($("#jixiao_infos").html());
-		$("#jixiao").html(t({company_kpi:company_kpi,user_kpi:user_kpi}));
-	}
-	jixiao_list();
-	//首页客户回访信息
-	var customers_feedback = function(){
-		var t = _.template($("#customers_feedback_infos").html());
-		$("#customers_feedback").html(t({feedbacks:feedbacks}));
-	};
-	customers_feedback();
-	//首页滞留车辆信息
-	var stay_vehicles = function(){
-		var t = _.template($("#stay_vehicles_infos").html());
-		$("#stay_vehicles").html(t({vehicles:vehicles}));
-	};
-	stay_vehicles();
-	//首页未采购信息
-	var unpurchase_infos = function(){
-		var t = _.template($("#purchase_infos").html());
-		$("#purchase_list").html(t({purchases:purchases}));
-	};
-	unpurchase_infos();
-	//手机修改
-	var click_phone_update = function(){
-		$("#phone_number").removeAttr("readOnly");
-		$("#phone_number").css("background-color","#dedede");
-	};
-	var click_phone_save = function(){
-		$("#phone_number").attr("readOnly","true");
-		$("#phone_number").css("background-color","white");
-	};
-	button3.click(function(){
-		purchase.addClass("hide");
-		$("#peijian_id").val("");
-		$("#peijian_name").val("");
-		$("#peijian_num").val("");
-		$("#peijian_date").val("");
-		$("#pur_remark").val("");
-		$("#add_peijian").html("");
-		$("#add_peijian").addClass("hide");
-	});
-	button2.click(function(){
-		vehicle_customer.addClass("hide");
-		$("#vehic_plate_number").val("");
-		$("#vehic_brand").val("");
-		$("#vehic_type").val("");
-		$("#vehic_pailiang_type").val("");
-		$("#vehic_color").val("");
-		$("#vehic_vin").val("");
-		$("#vehic_engine").val("");
-		$("#vehic_buy_date").val("");
-		$("#vehic_certi_date").val("");
-		$("#vehic_check_date").val("");
-
-		$("#custo_id").val("");
-		$("#custo_code").val("");
-		$("#custo_name").val("");
-		$("#custo_sex").val("");
-		$("#custo_phone").val("");
-		$("#custo_identi").val("");
-		$("#custo_birth").val("");
-		$("#custo_mobie").val("");
-		$("#custo_adress").val("");
-		$("#email").val("");
-	});
-	vihe_customer.click(function(){
-		vehicle_customer.removeClass("hide");
-	});
-	//获取所有车辆信息
-	var get_vehicle_info = function(){
-		$.get("/vehicle_info",function(data,status){
-			vehicle_total_infos = data.vehicle_infos;
-			//设置车品牌
-			_.forEach(vehicle_total_infos, function(vehicle_total_info) {
-				$('#vehic_brand').append($("<option></option>").attr("value",vehicle_total_info.name).text(vehicle_total_info.name));
-
-			});
-		});
-	};
-	get_vehicle_info();
-	//车辆车型select框变动
-	$("#vehic_brand").change(function(){
-		$('#vehic_type').html("<option></option>");
-		var name = $("#vehic_brand").val();
-		_.forEach(vehicle_total_infos, function(vehicle_total_info) {
-			if (vehicle_total_info.name == name) {
-				_.forEach(vehicle_total_info.types, function(type) {
-					$('#vehic_type').append($("<option></option>").attr("value",type.name).text(type.name));
-				});
-			}
-		});
-	});
-	//车辆颜色select变动
-	$("#vehic_brand").change(function(){
-		$('#vehic_color').html("<option></option>");
-		var name = $("#vehic_brand").val();
-		_.forEach(vehicle_total_infos, function(vehicle_total_info) {
-			if (vehicle_total_info.name == name) {
-				_.forEach(vehicle_total_info.colors, function(color) {
-					$('#vehic_color').append($("<option></option>").attr("value",color.name).text(color.name));
-				});
-			}
-		});
-	});
-	//创建采购单按钮
-	add_purch.click(function(){
-		if ($("#client_id").val()) {
-			purchase.removeClass("hide");
-			var pr = $(this).parentsUntil(".fixed");
-			pr.children(".child").removeClass("on");
-			$(this).addClass("on");
-			$("#pur_client_name").attr("value",search_result.row.name);
-			$("#pur_phone_number").attr("value",search_result.row.mobile);
-			$("#pur_plate_numbers").attr("value",search_result.row.plate_numbers);
-			$("#pur_type").attr("value",search_result.row.car_type);
-		}
-	});
-	//回到首页
-	show.click(function(){
-		change_page(1);
-		$("#client_id").removeAttr("value");
-	});
-	//键盘按下搜索
-	$("#txt").keypress(function(e){
-		var key = e.which; //e.which是按键的值
-		if (key == 13) {
-			search_go();
-		}
-	});
-	//配件code输入回车查询，信息显示
-	$("#peijian_id").change(function(){
-		var code = $("#peijian_id").val();
-		if (code) {
-			search_peijian(code);
-		}
-	});
-	var search_peijian = function(code){
-		var car_type = encodeURI(search_result.row.car_type);
-		$.post("/search_peijian",{code:code,car_type:car_type},function(data,status){
-			if (data.success) {
-				if (data.peijian.length > 0) {
-					for (var i = 0; i < data.peijian.length; i++) {
-						console.log(data.peijian[i].name);
-						$("#add_peijian").append("<div class='peijian_name2' data-code =' "+data.peijian[i].code+" ' data-price =' "+data.peijian[i].xiaoshou_price+" ' data-name ='"+data.peijian[i].name+" ' data-id = '"+data.peijian[i].id+"'>"+data.peijian[i].code+"</div>");
-					}
-					$("#add_peijian").removeClass("hide");
-					$(".peijian_name2").click(function(){
-						var code = $(this).data("code");
-						var name = $(this).data("name");
-						var price = $(this).data("price");
-						var id = $(this).data("id");
-						$("#peijian_id2").val(id);
-						$("#peijian_num").val("1");
-						$("#peijian_name").val(name);
-						$("#peijian_price").val(price);
-						$("#peijian_id").val(code);
-						$("#add_peijian").addClass("hide");
-						$("#add_peijian").html("");
-						$("#peijian_num").change(function(){
-							var num = $(this).val();
-							$("#peijian_price").val(price*num);
-						});
-					});
-				}
-			}else {
-				message_box(data.message,3000);
-				$("#add_peijian").html("");
-				$("#add_peijian").addClass("hide");
-			}
-		});
-	};
-	//搜索多个结果
-	var click_serarch_result = function(client_id){
-		begin_query();
-		show.removeClass("on");
-		if (search_result && page_status == 3) {
-			if (client_id == search_result.row.id ) {
-				end_query();
-				return;
-			}
-		}
-		$.get("/customer_info",{client_id:client_id},function(data,status){
-			change_page(3);
-			end_query();
-
-			var t = _.template($("#customer_info").html());
-			var vip = {};
-			if(data.vips[0]){
-				vip = data.vips[0];
-			}
-			search_result = {row:data.rows[0],vip:vip,repairs:data.repair_orders,purchase_infos:data.purchase_infos};
-			$("#customer").html(t(search_result));
-
-			add_today_info(data.today_info);
-			$('html, body').scrollTop(0);
-			$("#phone_update").click(function(){
-				click_phone_update();
-			});
-			$("#phone_save").click(function(){
-				click_phone_save();
-				var client_id = search_result.row.id;
-				var phone_number = $("#phone_number").val();
-				if (phone_number ==  search_result.row.mobile) {
-					return;
-				}
-				$.post("/save_phone_number",{"client_id":client_id,"phone_number":phone_number},function(data,status){
-					if (!data.success) {
-						message_box(data.message,3000);
-						return;
-					}
-				});
-			});
-			$(".create").click(
-				 function () {
-					 if (search_result.repairs.length > 0) {
-						 if (!search_result.repairs[0].shoukuan_date) {
-							 message_box("上个维修委托单未结束！",3000);
-							 return;
-						 }
-					 }
-					 $(".content3").removeClass("hide");
-					repair_tot_items.contact_name = search_result.row.name;
-					repair_tot_items.contact_mobile = search_result.row.mobile;
-					repair_paper();
-				 }
-			);
-			$(".repair_update").click(function(){
-				var id = $(this).data("id");
-				$(".content3").removeClass("hide");
-				for (var i = 0; i < search_result.repairs.length; i++) {
-					if (search_result.repairs[i].id == id) {
-						repair_tot_items = _.cloneDeep(search_result.repairs[i]);
-					}
-				}
-				repair_paper();
-			});
-			$("#check_member").click(function(){
-				check_member_info();
-			});
-			$("#huiyuan_number").keypress(function(e){
-				var key = e.which; //e.which是按键的值
-				if (key == 13) {
-					check_member_info();
-				}
-			});
-			//系统提醒编译保存
-			$("#remind").change(function(){
-				remind_save();
-			});
-		});
-	};
-	go.click(function(){
-		results.addClass("hide");
-		search_go();
-	});
-	//今天查询添加
-	var add_today_info = function(today_info){
-		var exists = false;
-		for (var i = 0; i < today_infos.length; i++) {
-			if (today_infos[i].client_id == today_info.client_id) {
-				exists = true;
-				break;
-			}
-		}
-
-		if (!exists) {
-			today_infos.unshift(today_info);
-			refresh_today_search();
-		}
-		$('.cursor[data-id='+today_info.client_id+']').addClass("bord");
-	};
-	//搜索执行
-	var search_go = function(){
-		var info = encodeURI($("#txt").val());
-		none_search.addClass("hide");
-		none_search2.addClass("hide");
-		if (info) {
-			begin_query();
-			$.get("/search_info",{info:info},function(data,status){
-				end_query();
-				if(data.success)
-				{
-					var num = data.num;
-					if(num == 0){
-						//没有数据时候提醒
-						none_search.fadeIn("fast");
-						setTimeout("no_data()",10000);
-					}else if (num == 1) {
-						//大量数据的时候提醒
-						message_box("搜索匹配数据过多，请多输入几位！",3000);
-					}
-					else if (num == 2) {
-						//查询出1条数据，直接显示客户信息
-						$("#txt").attr("value","");
-						content2.removeClass("hide");
-						con.addClass("hide");
-						var vip = {};
-						if(data.vips.length > 0){
-							vip = data.vips[0];
-						}
-						if (search_result) {
-							$('.cursor[data-id='+search_result.row.id+']').removeClass("bord");
-						}
-						add_purch.removeClass("hide");
-						var t = _.template($("#customer_info").html());
-						search_result = {row:data.rows[0],vip:vip,repairs:data.repair_orders,purchase_infos:data.purchase_infos};
-						$("#customer").html(t(search_result));
-						add_purch.css("cursor","pointer");
-						add_today_info(data.today_info);
-						//查询会员信息
-						$("#check_member").click(function(){
-							check_member_info();
-						});
-						//维修委托单创建
-						$(".create").click(
-							 function () {
-								 $(".content3").removeClass("hide");
-							 }
-						);
-						//系统提醒编译保存
-						$("#remind").change(function(){
-							remind_save();
-						});
-					}
-					else if (num == 3) {
-						//查询出多条记录，到一个数据列表
-						change_page(2);
-
-						$("#txt").attr("value","");
-
-						var tt = _.template($("#customers_lists_infos").html());
-						$("#results_title_infos").html(tt({rows: data.rows}));
-						$("#results_title_infos .number").hover(
-							function () {
-								$(this).addClass("curr");
-							},
-							function () {
-								$(this).removeClass("curr");
-							}
-						);
-
-						$("#results_title_infos .number").click(function(){
-							var client_id = $(this).data("id");
-							add_purch.removeClass("hide");
-							click_serarch_result(client_id);
-						});
-
-					}
+		};
+		//查询会员卡号
+		var check_member_info = function () {
+			var num = $("#huiyuan_number").val();
+			$.get("/check_member", {"num":num}, function(data,status){
+				if (data.member_info.length == 1) {
+					var member_info = data.member_info[0];
+					$("#vip_name").attr("value",member_info.client_name);
+					$("#vip_type").attr("value",member_info.huiyuankafenlei_name);
+					$("#vip_mobile").attr("value",member_info.mobile);
+					$("#vip_ruhui_date").attr("value",member_info.ruhui_date);
+					$("#vip_plate_numbers").attr("value",member_info.chepaihao);
+					$("#vip_shenfenzhenghaoma").attr("value",member_info.shenfenzhenghaoma);
+					$("#vip_ka_bianhao").attr("value",member_info.ka_bianhao);
+					$("#vip_zhuzhanghu_yue").attr("value",member_info.zhuzhanghu_yue);
+					search_result.vip = member_info;
 				}else {
-					message_box(data.message,3000);
+
 				}
-			 });
-		}
-	};
-	//创建客户采购单
-	var create_purchase = $(".pur_save.two");
-	create_purchase.click(function(){
-		var peijian_id = $("#peijian_id2").val();
-		var peijian_name = $("#peijian_name").val();
-		var peijian_num = $("#peijian_num").val();
-		var peijian_date = $("#peijian_date").val();
-		var pur_remark = $("#pur_remark").val();
-		var client_id = search_result.row.id;
-		$.post("/create_purchase_info", {"search_result":search_result, "peijian_id":peijian_id, "peijian_name":peijian_name,
-		"peijian_date":peijian_date, "pur_remark":pur_remark,"peijian_num":peijian_num, "client_id":client_id}, function(data,status){
-			if (!data.success) {
-				message_box(data.message,3000);
-				return;
+			});
+		};
+		// 刷新今天搜索面板
+		var refresh_today_search = function() {
+			var t = _.template($("#today_search_infos").html());
+			$("#search_today").html(t({today_infos:today_infos}));
+			$(".cursor").click(function(){
+				$(".cursor").removeClass("bord");
+				var client_id = $(this).data("id");
+				$(this).addClass("bord");
+				click_serarch_result(client_id);
+			});
+		};
+		refresh_today_search();
+		//首页绩效
+		var jixiao_list = function(){
+			var company_kpi = {"amount": 0,"customer_cnt": 0, "project_cnt": 0, "guanhuai_cnt":0};
+			var user_kpi = {"amount": 0,"customer_cnt": 0, "project_cnt": 0, "guanhuai_cnt":0};
+			if (jixiaos.company_kpi) {
+				company_kpi = jixiaos.company_kpi;
 			}
+			if (jixiaos.user_kpi) {
+				user_kpi = jixiaos.user_kpi;
+			}
+			var t = _.template($("#jixiao_infos").html());
+			$("#jixiao").html(t({company_kpi:company_kpi,user_kpi:user_kpi}));
+		}
+		jixiao_list();
+		//首页客户回访信息
+		var customers_feedback = function(){
+			var t = _.template($("#customers_feedback_infos").html());
+			$("#customers_feedback").html(t({feedbacks:feedbacks}));
+		};
+		customers_feedback();
+		//首页滞留车辆信息
+		var stay_vehicles = function(){
+			var t = _.template($("#stay_vehicles_infos").html());
+			$("#stay_vehicles").html(t({vehicles:vehicles}));
+		};
+		stay_vehicles();
+		//首页未采购信息
+		var unpurchase_infos = function(){
+			var t = _.template($("#purchase_infos").html());
+			$("#purchase_list").html(t({purchases:purchases}));
+		};
+		unpurchase_infos();
+		//手机修改
+		var click_phone_update = function(){
+			$("#phone_number").removeAttr("readOnly");
+			$("#phone_number").css("background-color","#dedede");
+		};
+		var click_phone_save = function(){
+			$("#phone_number").attr("readOnly","true");
+			$("#phone_number").css("background-color","white");
+		};
+		button3.click(function(){
 			purchase.addClass("hide");
 			$("#peijian_id").val("");
 			$("#peijian_name").val("");
 			$("#peijian_num").val("");
 			$("#peijian_date").val("");
 			$("#pur_remark").val("");
-			message_box("已成功创建采购申请单！",3000);
+			$("#add_peijian").html("");
+			$("#add_peijian").addClass("hide");
 		});
+		button2.click(function(){
+			vehicle_customer.addClass("hide");
+			$("#vehic_plate_number").val("");
+			$("#vehic_brand").val("");
+			$("#vehic_type").val("");
+			$("#vehic_pailiang_type").val("");
+			$("#vehic_color").val("");
+			$("#vehic_vin").val("");
+			$("#vehic_engine").val("");
+			$("#vehic_buy_date").val("");
+			$("#vehic_certi_date").val("");
+			$("#vehic_check_date").val("");
 
-	});
-	//创建客户档案 信息验证
-	var pur_save = $(".pur_save.one");
-	pur_save.click(function(){
-		var vehic_plate_number = $("#vehic_plate_number").val();
-		var vehic_brand = $("#vehic_brand").val();
-		if (vehic_brand == "") {
-			message_box("检查车品牌"+vehic_brand,3000);
-			return false;
-		}
-		var vehic_type = $("#vehic_type").val();
-		if (vehic_type == "") {
-			message_box("检查车类型",3000);
-			return false;
-		}
-		var vehic_pailiang_type = $("#vehic_pailiang_type").val();
-		if (vehic_pailiang_type == "") {
-			message_box("检查车排量",3000);
-			return false;
-		}
-		var vehic_color = $("#vehic_color").val();
-		if (vehic_color == "") {
-			message_box("检查车颜色",3000);
-			return false;
-		}
-		var vehic_vin = $("#vehic_vin").val();
-		if (vehic_vin == "") {
-			message_box("检查车VIN",3000);
-			return false;
-		}
-		var vehic_engine = $("#vehic_engine").val();
-		var vehic_buy_date = $("#vehic_buy_date").val();
-		var vehic_certi_date = $("#vehic_certi_date").val();
-		var vehic_check_date = $("#vehic_check_date").val();
+			$("#custo_id").val("");
+			$("#custo_code").val("");
+			$("#custo_name").val("");
+			$("#custo_sex").val("");
+			$("#custo_phone").val("");
+			$("#custo_identi").val("");
+			$("#custo_birth").val("");
+			$("#custo_mobie").val("");
+			$("#custo_adress").val("");
+			$("#email").val("");
+		});
+		vihe_customer.click(function(){
+			vehicle_customer.removeClass("hide");
+		});
+		//获取所有车辆信息
+		var get_vehicle_info = function(){
+			$.get("/vehicle_info",function(data,status){
+				vehicle_total_infos = data.vehicle_infos;
+				//设置车品牌
+				_.forEach(vehicle_total_infos, function(vehicle_total_info) {
+					$('#vehic_brand').append($("<option></option>").attr("value",vehicle_total_info.name).text(vehicle_total_info.name));
 
-		var custo_id = $("#custo_id").val();
-		var custo_code = $("#custo_code").val();
-		var custo_name = $("#custo_name").val();
-		if (custo_name == "") {
-			message_box("检查姓名",3000);
-			return false;
-		}
-		var custo_sex = $("#custo_sex").val();
-		if (custo_sex == "") {
-			message_box("检查性别",3000);
-			return false;
-		}
-		var custo_phone = $("#custo_phone").val();
-		if (custo_phone == "") {
-			message_box("检查手机",3000);
-			return false;
-		}
-		var custo_identi = $("#custo_identi").val();
-		var custo_birth = $("#custo_birth").val();
-		var custo_mobie = $("#custo_mobie").val();
-		var custo_adress = $("#custo_adress").val();
-		var custo_email = $("#custo_email").val();
-		pur_save.attr("value","创建中");
-		pur_save.attr("disabled", true);
-		$.post("/create_customer_info",{vehic_plate_number:vehic_plate_number, vehic_brand:vehic_brand, vehic_type:vehic_type,
-			vehic_pailiang_type:vehic_pailiang_type, vehic_color:vehic_color, vehic_vin:vehic_vin, vehic_engine:vehic_engine,
-			vehic_buy_date:vehic_buy_date, vehic_certi_date:vehic_certi_date, vehic_check_date:vehic_check_date,
-			custo_id:custo_id, custo_code:custo_code, custo_name:custo_name, custo_sex:custo_sex, custo_phone:custo_phone,
-			custo_identi:custo_identi, custo_birth:custo_birth, custo_mobie:custo_mobie, custo_adress, custo_email:custo_email},
-			function(data,status){
-				if (!data.success) {
-					message_box(data.message,3000);
-					pur_save.removeAttr("disabled");
-					pur_save.attr("value","保存");
-					return;
+				});
+			});
+		};
+		get_vehicle_info();
+		//车辆车型select框变动
+		$("#vehic_brand").change(function(){
+			$('#vehic_type').html("<option></option>");
+			var name = $("#vehic_brand").val();
+			_.forEach(vehicle_total_infos, function(vehicle_total_info) {
+				if (vehicle_total_info.name == name) {
+					_.forEach(vehicle_total_info.types, function(type) {
+						$('#vehic_type').append($("<option></option>").attr("value",type.name).text(type.name));
+					});
 				}
-				vehicle_customer.addClass("hide");
-				click_serarch_result(data.client_id);
-				pur_save.removeAttr("disabled");
-				pur_save.attr("value","保存");
-				$("#vehic_plate_number").val("");
-				$("#vehic_brand").val("");
-				$("#vehic_type").val("");
-				$("#vehic_pailiang_type").val("");
-				$("#vehic_color").val("");
-				$("#vehic_vin").val("");
-				$("#vehic_engine").val("");
-				$("#vehic_buy_date").val("");
-				$("#vehic_certi_date").val("");
-				$("#vehic_check_date").val("");
-
-				$("#custo_id").val("");
-				$("#custo_code").val("");
-				$("#custo_name").val("");
-				$("#custo_sex").val("");
-				$("#custo_phone").val("");
-				$("#custo_identi").val("");
-				$("#custo_birth").val("");
-				$("#custo_mobie").val("");
-				$("#custo_adress").val("");
-				$("#email").val("");
 			});
 		});
-	//首页点击客户姓名直接跳转客户信息页面
-	$(".lianjie").click(function(){
-		var client_id = $(this).data("id");
-		click_serarch_result(client_id);
-	});
-});
-function no_data(){
-	var none_search = $(".none_search");
-	none_search.fadeOut(2000);
-};
-function message_box(msg,time_in_million){
-	var none_search2 = $(".none_search2");
-	none_search2.fadeIn("fast");
-	$("#ad_info").html(msg);
-	setTimeout("large_data()",time_in_million);
-};
-function large_data(){
-	var none_search2 = $(".none_search2");
-	none_search2.fadeOut(2000);
-}
-function begin_query(){
-	var d = new Date();
-	var t = d.getTime();
-	search_status.time = t;
-	search_status.running = true;
+		//车辆颜色select变动
+		$("#vehic_brand").change(function(){
+			$('#vehic_color').html("<option></option>");
+			var name = $("#vehic_brand").val();
+			_.forEach(vehicle_total_infos, function(vehicle_total_info) {
+				if (vehicle_total_info.name == name) {
+					_.forEach(vehicle_total_info.colors, function(color) {
+						$('#vehic_color').append($("<option></option>").attr("value",color.name).text(color.name));
+					});
+				}
+			});
+		});
+		//创建采购单按钮
+		add_purch.click(function(){
+			if ($("#client_id").val()) {
+				purchase.removeClass("hide");
+				var pr = $(this).parentsUntil(".fixed");
+				pr.children(".child").removeClass("on");
+				$(this).addClass("on");
+				$("#pur_client_name").attr("value",search_result.row.name);
+				$("#pur_phone_number").attr("value",search_result.row.mobile);
+				$("#pur_plate_numbers").attr("value",search_result.row.plate_numbers);
+				$("#pur_type").attr("value",search_result.row.car_type);
+			}
+		});
+		//回到首页
+		show.click(function(){
+			change_page(1);
+			$("#client_id").removeAttr("value");
+		});
+		//键盘按下搜索
+		$("#txt").keypress(function(e){
+			var key = e.which; //e.which是按键的值
+			if (key == 13) {
+				search_go();
+			}
+		});
+		//配件code输入回车查询，信息显示
+		$("#peijian_id").change(function(){
+			var code = $("#peijian_id").val();
+			if (code) {
+				search_peijian(code);
+			}
+		});
+		var search_peijian = function(code){
+			var car_type = encodeURI(search_result.row.car_type);
+			$.post("/search_peijian",{code:code,car_type:car_type},function(data,status){
+				if (data.success) {
+					if (data.peijian.length > 0) {
+						for (var i = 0; i < data.peijian.length; i++) {
+							console.log(data.peijian[i].name);
+							$("#add_peijian").append("<div class='peijian_name2' data-code =' "+data.peijian[i].code+" ' data-price =' "+data.peijian[i].xiaoshou_price+" ' data-name ='"+data.peijian[i].name+" ' data-id = '"+data.peijian[i].id+"'>"+data.peijian[i].code+"</div>");
+						}
+						$("#add_peijian").removeClass("hide");
+						$(".peijian_name2").click(function(){
+							var code = $(this).data("code");
+							var name = $(this).data("name");
+							var price = $(this).data("price");
+							var id = $(this).data("id");
+							$("#peijian_id2").val(id);
+							$("#peijian_num").val("1");
+							$("#peijian_name").val(name);
+							$("#peijian_price").val(price);
+							$("#peijian_id").val(code);
+							$("#add_peijian").addClass("hide");
+							$("#add_peijian").html("");
+							$("#peijian_num").change(function(){
+								var num = $(this).val();
+								$("#peijian_price").val(price*num);
+							});
+						});
+					}
+				}else {
+					message_box(data.message,3000);
+					$("#add_peijian").html("");
+					$("#add_peijian").addClass("hide");
+				}
+			});
+		};
+		//搜索多个结果
+		var click_serarch_result = function(client_id){
+			begin_query();
+			show.removeClass("on");
+			if (search_result && page_status == 3) {
+				if (client_id == search_result.row.id ) {
+					end_query();
+					return;
+				}
+			}
+			$.get("/customer_info",{client_id:client_id},function(data,status){
+				change_page(3);
+				end_query();
 
-	$('.xian').addClass("fullwidth");
-	$('.xian').removeClass('fullwidth').delay(10).queue(function(next){
-		$(this).addClass('fullwidth');
-		next();
+				var t = _.template($("#customer_info").html());
+				var vip = {};
+				if(data.vips[0]){
+					vip = data.vips[0];
+				}
+				search_result = {row:data.rows[0],vip:vip,repairs:data.repair_orders,purchase_infos:data.purchase_infos};
+				$("#customer").html(t(search_result));
+
+				//打印模板
+				$(".repair_print").click(function(){
+					var repair_id = $(this).data("id");
+					for (var i = 0; i < search_result.repairs.length; i++) {
+						if (search_result.repairs[i].id == repair_id) {
+							repair_tot_items = _.cloneDeep(search_result.repairs[i]);
+						}
+					}
+					var t = _.template($("#repair_content_infos").html());
+					$(".repair_content_print").html(t({repair_tot_items:repair_tot_items,search_result:search_result}));
+
+					$("#content5").removeClass("hide");
+
+					$("#repair_content").printArea();
+				});
+				add_today_info(data.today_info);
+				$('html, body').scrollTop(0);
+				$("#phone_update").click(function(){
+					click_phone_update();
+				});
+				$("#phone_save").click(function(){
+					click_phone_save();
+					var client_id = search_result.row.id;
+					var phone_number = $("#phone_number").val();
+					if (phone_number ==  search_result.row.mobile) {
+						return;
+					}
+					$.post("/save_phone_number",{"client_id":client_id,"phone_number":phone_number},function(data,status){
+						if (!data.success) {
+							message_box(data.message,3000);
+							return;
+						}
+					});
+				});
+				$(".create").click(
+					 function () {
+						 if (search_result.repairs.length > 0) {
+							 if (!search_result.repairs[0].shoukuan_date) {
+								 message_box("上个维修委托单未结束！",3000);
+								 return;
+							 }
+						 }
+						 $(".content3").removeClass("hide");
+						repair_tot_items.contact_name = search_result.row.name;
+						repair_tot_items.contact_mobile = search_result.row.mobile;
+						repair_paper();
+					 }
+				);
+				$(".repair_update").click(function(){
+					var id = $(this).data("id");
+					$(".content3").removeClass("hide");
+					for (var i = 0; i < search_result.repairs.length; i++) {
+						if (search_result.repairs[i].id == id) {
+							repair_tot_items = _.cloneDeep(search_result.repairs[i]);
+						}
+					}
+					repair_paper();
+				});
+				$("#check_member").click(function(){
+					check_member_info();
+				});
+				$("#huiyuan_number").keypress(function(e){
+					var key = e.which; //e.which是按键的值
+					if (key == 13) {
+						check_member_info();
+					}
+				});
+				//系统提醒编译保存
+				$("#remind").change(function(){
+					remind_save();
+				});
+			});
+		};
+		go.click(function(){
+			results.addClass("hide");
+			search_go();
+		});
+		//今天查询添加
+		var add_today_info = function(today_info){
+			var exists = false;
+			for (var i = 0; i < today_infos.length; i++) {
+				if (today_infos[i].client_id == today_info.client_id) {
+					exists = true;
+					break;
+				}
+			}
+
+			if (!exists) {
+				today_infos.unshift(today_info);
+				refresh_today_search();
+			}
+			$('.cursor[data-id='+today_info.client_id+']').addClass("bord");
+		};
+		//搜索执行
+		var search_go = function(){
+			var info = encodeURI($("#txt").val());
+			none_search.addClass("hide");
+			none_search2.addClass("hide");
+			if (info) {
+				begin_query();
+				$.get("/search_info",{info:info},function(data,status){
+					end_query();
+					if(data.success)
+					{
+						var num = data.num;
+						if(num == 0){
+							//没有数据时候提醒
+							none_search.fadeIn("fast");
+							setTimeout("no_data()",10000);
+						}else if (num == 1) {
+							//大量数据的时候提醒
+							message_box("搜索匹配数据过多，请多输入几位！",3000);
+						}
+						else if (num == 2) {
+							//查询出1条数据，直接显示客户信息
+							$("#txt").attr("value","");
+							content2.removeClass("hide");
+							con.addClass("hide");
+							var vip = {};
+							if(data.vips.length > 0){
+								vip = data.vips[0];
+							}
+							if (search_result) {
+								$('.cursor[data-id='+search_result.row.id+']').removeClass("bord");
+							}
+							add_purch.removeClass("hide");
+							var t = _.template($("#customer_info").html());
+							search_result = {row:data.rows[0],vip:vip,repairs:data.repair_orders,purchase_infos:data.purchase_infos};
+							$("#customer").html(t(search_result));
+							add_purch.css("cursor","pointer");
+							add_today_info(data.today_info);
+							//查询会员信息
+							$("#check_member").click(function(){
+								check_member_info();
+							});
+							//维修委托单创建
+							$(".create").click(
+								 function () {
+									 $(".content3").removeClass("hide");
+								 }
+							);
+							//系统提醒编译保存
+							$("#remind").change(function(){
+								remind_save();
+							});
+						}
+						else if (num == 3) {
+							//查询出多条记录，到一个数据列表
+							change_page(2);
+
+							$("#txt").attr("value","");
+
+							var tt = _.template($("#customers_lists_infos").html());
+							$("#results_title_infos").html(tt({rows: data.rows}));
+							$("#results_title_infos .number").hover(
+								function () {
+									$(this).addClass("curr");
+								},
+								function () {
+									$(this).removeClass("curr");
+								}
+							);
+
+							$("#results_title_infos .number").click(function(){
+								var client_id = $(this).data("id");
+								add_purch.removeClass("hide");
+								click_serarch_result(client_id);
+							});
+
+						}
+					}else {
+						message_box(data.message,3000);
+					}
+				 });
+			}
+		};
+		//创建客户采购单
+		var create_purchase = $(".pur_save.two");
+		create_purchase.click(function(){
+			var peijian_id = $("#peijian_id2").val();
+			var peijian_name = $("#peijian_name").val();
+			var peijian_num = $("#peijian_num").val();
+			var peijian_date = $("#peijian_date").val();
+			var pur_remark = $("#pur_remark").val();
+			var client_id = search_result.row.id;
+			$.post("/create_purchase_info", {"search_result":search_result, "peijian_id":peijian_id, "peijian_name":peijian_name,
+			"peijian_date":peijian_date, "pur_remark":pur_remark,"peijian_num":peijian_num, "client_id":client_id}, function(data,status){
+				if (!data.success) {
+					message_box(data.message,3000);
+					return;
+				}
+				purchase.addClass("hide");
+				$("#peijian_id").val("");
+				$("#peijian_name").val("");
+				$("#peijian_num").val("");
+				$("#peijian_date").val("");
+				$("#pur_remark").val("");
+				message_box("已成功创建采购申请单！",3000);
+			});
+
+		});
+		//创建客户档案 信息验证
+		var pur_save = $(".pur_save.one");
+		pur_save.click(function(){
+			var vehic_plate_number = $("#vehic_plate_number").val();
+			var vehic_brand = $("#vehic_brand").val();
+			if (vehic_brand == "") {
+				message_box("检查车品牌"+vehic_brand,3000);
+				return false;
+			}
+			var vehic_type = $("#vehic_type").val();
+			if (vehic_type == "") {
+				message_box("检查车类型",3000);
+				return false;
+			}
+			var vehic_pailiang_type = $("#vehic_pailiang_type").val();
+			if (vehic_pailiang_type == "") {
+				message_box("检查车排量",3000);
+				return false;
+			}
+			var vehic_color = $("#vehic_color").val();
+			if (vehic_color == "") {
+				message_box("检查车颜色",3000);
+				return false;
+			}
+			var vehic_vin = $("#vehic_vin").val();
+			if (vehic_vin == "") {
+				message_box("检查车VIN",3000);
+				return false;
+			}
+			var vehic_engine = $("#vehic_engine").val();
+			var vehic_buy_date = $("#vehic_buy_date").val();
+			var vehic_certi_date = $("#vehic_certi_date").val();
+			var vehic_check_date = $("#vehic_check_date").val();
+
+			var custo_id = $("#custo_id").val();
+			var custo_code = $("#custo_code").val();
+			var custo_name = $("#custo_name").val();
+			if (custo_name == "") {
+				message_box("检查姓名",3000);
+				return false;
+			}
+			var custo_sex = $("#custo_sex").val();
+			if (custo_sex == "") {
+				message_box("检查性别",3000);
+				return false;
+			}
+			var custo_phone = $("#custo_phone").val();
+			if (custo_phone == "") {
+				message_box("检查手机",3000);
+				return false;
+			}
+			var custo_identi = $("#custo_identi").val();
+			var custo_birth = $("#custo_birth").val();
+			var custo_mobie = $("#custo_mobie").val();
+			var custo_adress = $("#custo_adress").val();
+			var custo_email = $("#custo_email").val();
+			pur_save.attr("value","创建中");
+			pur_save.attr("disabled", true);
+			$.post("/create_customer_info",{vehic_plate_number:vehic_plate_number, vehic_brand:vehic_brand, vehic_type:vehic_type,
+				vehic_pailiang_type:vehic_pailiang_type, vehic_color:vehic_color, vehic_vin:vehic_vin, vehic_engine:vehic_engine,
+				vehic_buy_date:vehic_buy_date, vehic_certi_date:vehic_certi_date, vehic_check_date:vehic_check_date,
+				custo_id:custo_id, custo_code:custo_code, custo_name:custo_name, custo_sex:custo_sex, custo_phone:custo_phone,
+				custo_identi:custo_identi, custo_birth:custo_birth, custo_mobie:custo_mobie, custo_adress, custo_email:custo_email},
+				function(data,status){
+					if (!data.success) {
+						message_box(data.message,3000);
+						pur_save.removeAttr("disabled");
+						pur_save.attr("value","保存");
+						return;
+					}
+					vehicle_customer.addClass("hide");
+					click_serarch_result(data.client_id);
+					pur_save.removeAttr("disabled");
+					pur_save.attr("value","保存");
+					$("#vehic_plate_number").val("");
+					$("#vehic_brand").val("");
+					$("#vehic_type").val("");
+					$("#vehic_pailiang_type").val("");
+					$("#vehic_color").val("");
+					$("#vehic_vin").val("");
+					$("#vehic_engine").val("");
+					$("#vehic_buy_date").val("");
+					$("#vehic_certi_date").val("");
+					$("#vehic_check_date").val("");
+
+					$("#custo_id").val("");
+					$("#custo_code").val("");
+					$("#custo_name").val("");
+					$("#custo_sex").val("");
+					$("#custo_phone").val("");
+					$("#custo_identi").val("");
+					$("#custo_birth").val("");
+					$("#custo_mobie").val("");
+					$("#custo_adress").val("");
+					$("#email").val("");
+				});
+			});
+		//首页点击客户姓名直接跳转客户信息页面
+		$(".lianjie").click(function(){
+			var client_id = $(this).data("id");
+			click_serarch_result(client_id);
+		});
 	});
-};
-function stop_query(){
-	$('.xian').removeClass('fullwidth');
-};
-function end_query(){
-	var d = new Date();
-	var t = d.getTime();
-	if (t - search_status.time < 2000) {
-		setTimeout("stop_query()",2000 - (t - search_status.time));
+	function no_data(){
+		var none_search = $(".none_search");
+		none_search.fadeOut(2000);
+	};
+	function message_box(msg,time_in_million){
+		var none_search2 = $(".none_search2");
+		none_search2.fadeIn("fast");
+		$("#ad_info").html(msg);
+		setTimeout("large_data()",time_in_million);
+	};
+	function large_data(){
+		var none_search2 = $(".none_search2");
+		none_search2.fadeOut(2000);
 	}
-	else {
-		stop_query();
-	}
-};
+	function begin_query(){
+		var d = new Date();
+		var t = d.getTime();
+		search_status.time = t;
+		search_status.running = true;
+
+		$('.xian').addClass("fullwidth");
+		$('.xian').removeClass('fullwidth').delay(10).queue(function(next){
+			$(this).addClass('fullwidth');
+			next();
+		});
+	};
+	function stop_query(){
+		$('.xian').removeClass('fullwidth');
+	};
+	function end_query(){
+		var d = new Date();
+		var t = d.getTime();
+		if (t - search_status.time < 2000) {
+			setTimeout("stop_query()",2000 - (t - search_status.time));
+		}
+		else {
+			stop_query();
+		}
+	};
 </script>
 <style type="text/css">
 	body{
@@ -1414,6 +1463,18 @@ function end_query(){
 	    background-color: #FAFAFC;
 	    border-radius: 3px;
 	    overflow: hidden;
+	}
+	.weui_dialog_print {
+		position: fixed;
+		z-index: 13;
+		width: 795px;
+		top: 50%;
+		left: 50%;
+		-webkit-transform: translate(-50%, -50%);
+		transform: translate(-50%, -50%);
+		background-color: #FAFAFC;
+		border-radius: 3px;
+		overflow: hidden;
 	}
 	.weui_dialog .item{
 		height: 520px;
@@ -2308,6 +2369,9 @@ function end_query(){
 	.repair_delete{
 		cursor: pointer;
 	}
+	.repair_print{
+		cursor: pointer;
+	}
 	.borderline:first-child {
 		border-top: none;
 	}
@@ -2365,6 +2429,24 @@ function end_query(){
 	}
 	.right5{
 		margin-right: 5px;
+	}
+
+	table.gridtable3 {
+		font-family: verdana,arial,sans-serif;
+		color:#333333;
+		border-width: 1px;
+		border-color: #666;
+		border-collapse: collapse;
+		width: 100%;
+	}
+	table.gridtable3 td {
+		border-width: 1px;
+		border-style: solid;
+		border-color: #666666;
+		background: #F7F7F7;
+		font-size: 12px;
+		text-align: center;
+		padding: 4px;
 	}
 </style>
 </head>
@@ -2580,6 +2662,7 @@ function end_query(){
 							<span style="margin-left:45px;">进厂时间：<%- repair.jinchang_time %></span>
 							<% if (repair.shoukuan_date) { %><span style="margin-left:47px;">收款时间：<%- repair.shoukuan_date %></span><% } else{ %>
 							<span class="repair_update" data-id="<%- repair.id %>" style="float:right;margin-right:6px;cursor: pointer;">修改</span><% } %>
+							<span data-id="<%- repair.id %>" class="repair_print" style="float:right;margin-right:16px;">打印</span>
 						</div>
 						<div class="item"><span>送修人：</span><input value="<%- repair.contact_name %>"  readonly></input></div>
 						<div class="item"><span>手机号：</span><input value="<%- repair.contact_mobile %>"  readonly></input></div>
@@ -2618,7 +2701,7 @@ function end_query(){
 		</div>
 		<script id="repair_paper_infos" type="text/template">
 			<div class="head">
-				<span style="width:100%;">维修委托单</span>
+				<span style="width:100%;">维修委托单<%- repair_tot_items.new_repair_no %></span>
 			</div>
 			<div class="main">
 				<div class="left" >
@@ -2686,8 +2769,10 @@ function end_query(){
 					<div class="module_list"><img /><span class="repair_add">新增</span></div>
 					<div class="split">|</div>
 					<div class="module_list"><img /><span class="repair_delete">删除</span></div>
-					<!-- <div class="split">|</div>
-					<div class="module_list2" id="change_hours">修改工时</div> -->
+					<div class="split">|</div>
+					<div class="module_list" id="print_repair">
+						<img /><span class="repair_print">打印</span>
+					</div>
 					<div class="split">|</div>
 					<div class="module_list3">批量设置维修类别:</div>
 					<select id="change_type">
@@ -2855,6 +2940,15 @@ function end_query(){
 
 			</table>
 		</div>
+		<div class="content5 hide">
+			<div class="weui_mask"></div>
+			<div class="weui_dialog_print">
+				<div style="width:795px;margin:60px;margin-right:10px;" id="repair_content">
+					<div class="repair_content_print">
+					</div>
+				</div>
+			</div>
+		</div>
 		<script id="customers_lists_infos" type="text/template">
 			<tr>
 				<th>姓名</th><th>手机号</th><th>车牌号</th><th>车架号</th><th>车辆信息</th>
@@ -2952,6 +3046,216 @@ function end_query(){
 			<% _.forEach(projects, function(repair_item_info) { %>
 				<div class="repair_cre_detail" data-id="<%- repair_item_info.repair_project_id %>"><%- repair_item_info.repair_project_name %></div>
 			<% }); %>
+		</script>
+		<script id="repair_content_infos" type="text/template">
+			<style type="text/css">
+				table.gridtable3 {
+					font-family: verdana,arial,sans-serif;
+					color:#333333;
+					border-width: 1px;
+					border-color: #666;
+					border-collapse: collapse;
+					width: 100%;
+				}
+				table.gridtable3 td {
+					border-width: 1px;
+					border-style: solid;
+					border-color: #666666;
+					background: #F7F7F7;
+					font-size: 12px;
+					text-align: center;
+					padding: 4px;
+				}
+			</style>
+			<div style="height:125px;clear:both;">
+				<div style="width:100%;height:60px;display:inline-block;">
+					<div style="width:80px;padding-left:10px;float:left;height:60px;padding-right:10px;">
+						<img src="images/logo2.png" style="width:80px;height:53px;"/>
+					</div>
+					<div style="width:325px;font-size: 28px;float:left;height:60px;">
+						上海东神汽车维修委托书
+					</div>
+					<div style="height:100%;width:265px;float:left;height:60px;">
+						<table class="gridtable3">
+							<tr>
+								<td>委托书号</td>
+								<td>优先派工</td>
+								<td>技术部预检</td>
+							</tr>
+							<tr style="height:32px;">
+								<td><%- repair_tot_items.repair_no %></td>
+								<td>否</td>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+					<div style="clear:both;"></div>
+				</div>
+				<div style="width:100%;height:60px;font-size: 8px;">
+					<div style="width:100%;height:20px;display:inline-block;">
+						<span>上海弘仁4S店总店地址：上海市闵行区漕宝路2108号（外环线以外300米）</span>
+						<sapn style="margin-left:90px;">24小时服务电话：021-51695745</span>
+					</div>
+					<div style="width:100%;height:20px;display:inline-block;">
+						<span>浦东4S店（旗舰店）地址：沪南公路3021号（秀沿路口）</span>
+					</div>
+					<div style="width:100%;height:20px;display:inline-block;">
+						<span>杨浦维修服务中心地址：周家嘴路4230号（中环线内200米）杨浦汽配9幢1-7号</span>
+						<sapn style="margin-left:67px;">24小时服务电话：021-51695745</span>
+					</div>
+				</div>
+			</div>
+			<div style="width:695px;">
+				<table class="gridtable3">
+					<tr>
+						<td rowspan="2" style="width:100px;">车辆信息</td>
+						<td style="width:210px;" colspan="2">
+							牌照号/VIN码
+						</td>
+						<td style="width:113px;">
+							里程
+						</td>
+						<td style="width:120px;">
+							车主姓名
+						</td>
+						<td style="width:120px;">
+							送修人
+						</td>
+						<td style="width:120px;">
+							联系电话
+						</td>
+					</tr>
+					<tr>
+						<td style="width:210px;" colspan="2">
+							<%- search_result.row.plate_numbers %>/<%- search_result.row.vin_no %>
+						</td>
+						<td style="width:113px;">
+							<%- repair_tot_items.legend %>
+						</td>
+						<td style="width:120px;">
+							<%- search_result.row.name %>
+						</td>
+						<td style="width:120px;">
+							<%- repair_tot_items.contact_name %>
+						</td>
+						<td style="width:120px;">
+							<% if (repair_tot_items.client_mobile) { %>
+								<%- repair_tot_items.client_mobile.substring(0,3) %>****<%- repair_tot_items.client_mobile.substring(8)%>
+							<% } else { %> 没有<% } %>
+						</td>
+					</tr>
+					<tr>
+						<td rowspan="2" style="width:100px;">时间确认</td>
+						<td colspan="2" style="width:190px;">
+							报修日期、时间
+						</td>
+						<td colspan="2" style="width:200px;">
+							预计交车日期、时间
+						</td>
+						<td colspan="2" style="width:200px;">
+							追加项目日期
+						</td>
+					</tr>
+					<tr>
+						<td colspan="2" style="width:190px;">
+							<%- repair_tot_items.jinchang_time %>
+						</td>
+						<td colspan="2" style="width:200px;">
+							2017-01-15 14:00
+						</td>
+						<td colspan="2" style="width:200px;">
+
+						</td>
+					</tr>
+					<tr>
+						<td style="width:100px;height:80px;">
+							<div>客户</div>
+							<div>保修</div>
+							<div>内容</div>
+						</td>
+						<td colspan="6" style="text-align:left;"><%- repair_tot_items.breakdown_desc %> </td>
+					<tr>
+						<td rowspan="5" style="width:100px;">维修项目明细</td>
+						<td style="width:210px;">
+							维修项目
+						</td>
+						<td style="width:80px;">
+							工时
+						</td>
+						<td>
+							工时价
+						</td>
+						<td>
+							工时费
+						</td>
+						<td>
+							折扣率
+						</td>
+						<td>
+							实收费用
+						</td>
+					</tr>
+					<% _.forEach(repair_tot_items.projects, function(repair_item_info,index) { %>
+						<tr>
+							<td style="width:210px;">
+								<%- repair_item_info.repair_project_name %>
+							</td>
+							<td style="width:80px;">
+								<%- repair_item_info.gongshi %>
+							</td>
+							<td>
+								<%- repair_item_info.gongshi_price %>
+							</td>
+							<td>
+								<%- repair_item_info.gongshi_fei %>
+							</td>
+							<td>
+								<%- search_result.vip.gongshi_zhekou*100 || 100 %>%
+							</td>
+							<td>
+								0.0
+							</td>
+						</tr>
+					<% }); %>
+					<tr>
+						<td colspan="6" style="text-align:right;">总工时：0.0 &nbsp;&nbsp;&nbsp;&nbsp;工时费：0元</td>
+					</tr>
+					<tr >
+						<td>
+							总金额
+						</td>
+						<td>
+							￥0.0元
+						</td>
+						<td colspan="6" colspan="6" style="text-align:left;">
+							（大写）零圆整
+						</td>
+					</tr>
+					<tr>
+						<td>告知内容</td>
+						<td  colspan="6" style="text-align:left;">
+							<p>1.敬请客户将车内私人贵重物品随身携带，如有遗失，本公司概不得负责。</p>
+							<p>2.车辆修理完工后请及时到财务窗口付款，凭财务出具的出门证提车，超过24小时需要另加仓储保管费。</p>
+							<p>3.交车地点为弘仁服务店，一般不提供送车服务，如客户有特殊需求，需按距离足额支付送车费。</p>
+							<p>4.技师将在需要时对维修车辆进行路试，路试或送车服务期间所发生的涉及人身、车辆、财务及其他方面的任何风险、损失、费用等地切经济责任和法律责任均匀由车主本人完全承担。</p>
+							<p>5.对于客户报修或弘仁技师发现的任务故障现象，如客户不愿意接受技师的维修建议由此造成的任何问题（如抛锚等）与我公司无关。</p>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="2" style="text-align:left;width:150px;">客户交付物品登记</td>
+						<td colspan="5" style="text-align:left;">
+							车钥匙：（   ）&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+							行驶证：（   ）&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+							保修手册：（   ）&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+							其他：
+						</td>
+					</tr>
+					<tr>
+						<td colspan="5" style="text-align:left;">如您同意委托书的各项内容请签名确认！&nbsp;&nbsp;&nbsp;客户签名：</td>
+						<td colspan="2" style="text-align:left;">服务顾问：</td>
+					</tr>
+				</table>
+			</div>
 		</script>
 	</div>
 	<div style="clear:both;"></div>

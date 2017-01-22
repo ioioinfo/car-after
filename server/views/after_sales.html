@@ -65,6 +65,11 @@
 				}
 			});
 		};
+		//缓存图片
+		var oimg = new Image();
+		oimg.onload = function() {};
+		oimg.src = "images/logo2.png";
+
 		//当维修单有数据时候，刷新页面提醒
 		$(window).bind('beforeunload',function(){
 			if (repair_tot_items.name) {
@@ -3150,7 +3155,7 @@
 			<div style="height:125px;clear:both;">
 				<div style="width:100%;height:60px;display:inline-block;">
 					<div style="width:80px;padding-left:10px;float:left;height:60px;padding-right:10px;">
-						<img src="images/logo2.png" style="width:80px;height:53px;"/>
+						<img style="width:80px;height:53px;" class="logo_img" src="images/logo2.png"/>
 					</div>
 					<div style="width:325px;font-size: 28px;float:left;height:60px;">
 						上海东神汽车维修委托书

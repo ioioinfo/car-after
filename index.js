@@ -1,14 +1,11 @@
-﻿var Hapi = require('hapi');
-// Create a server with a host and port
+var Hapi = require('hapi');
 var server = new Hapi.Server();
 
-// Setup the server with a host and port
 server.connection({
-    port: parseInt(process.env.PORT, 10) || 8000,
+    port: parseInt(process.env.PORT, 10) || 11001,
     host: '0.0.0.0'
 });
 
-// Setup the views engine and folder
 server.register(require('vision'), (err) => {
     if (err) {
         throw err;
@@ -37,14 +34,8 @@ server.state('cookie', {
     strictHeader: true // don't allow violations of RFC 6265
 });
 
-// Export the server to be required elsewhere.
 module.exports = server;
 
-/*
-    Load all plugins and then start the server.
-    First: community/npm plugins are loaded
-    Second: project specific plugins are loaded
- */
 server.register([
 	{
         register: require("good"),
@@ -67,10 +58,6 @@ server.register([
 	{
       register: require('./server/assets/index.js')
     },
-
-	// {
-    //   register: require('./server/models/models.js')
-    // },
 	{
       register: require('./server/utils/cache.js')
     },
